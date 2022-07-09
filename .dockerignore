@@ -1,0 +1,9 @@
+# Render folder
+*/*/render/
+*/*/wandb/
+# Pretrained networks
+*/*/param/
+# Uncertainties files
+*/*/uncertainties/
+#
+*/*/images/
