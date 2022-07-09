@@ -11,12 +11,12 @@ import numpy as np
 import sys
 
 sys.path.append('..')
-from shared.utils.utils import init_uncert_file
-from shared.components.env import Env
+from shared.utils.uncert_file import init_uncert_file
+from shared.envs.env import Env
 from shared.utils.replay_buffer import ReplayMemory
 from shared.components.logger import Logger
 from components.uncert_agents import make_agent
-from components.eps_scheduler import Epsilon
+from components.epsilon import Epsilon
 from components.trainer import Trainer
 from models import make_model
 
@@ -163,12 +163,12 @@ if __name__ == "__main__":
     run_name = f"{args.model}_{run_id}"
     # run_name = args.model
     render_path = "render"
-    render_model_path = f"{render_path}/train"
-    train_render_model_path = f"{render_model_path}/{run_name}"
+    render_eval_path = f"{render_path}/eval"
+    render_eval__model_path = f"{render_eval_path}/{run_name}"
     param_path = "param"
     uncertainties_path = "uncertainties"
-    uncertainties_train_path = f"{uncertainties_path}/eval"
-    uncertainties_file_path = f"{uncertainties_train_path}/{run_name}.txt"
+    uncertainties_eval_path = f"{uncertainties_path}/eval"
+    uncertainties_eval_model_path = f"{uncertainties_eval_path}/{run_name}.txt"
 
     print(colored("Initializing data folders", "blue"))
     # Init model checkpoint folder and uncertainties folder
@@ -179,17 +179,17 @@ if __name__ == "__main__":
             os.makedirs(uncertainties_path)
         if not os.path.exists(render_path):
             os.makedirs(render_path)
-        if not os.path.exists(render_model_path):
-            os.makedirs(render_model_path)
-        if not os.path.exists(train_render_model_path):
-            os.makedirs(train_render_model_path)
+        if not os.path.exists(render_eval_path):
+            os.makedirs(render_eval_path)
+        if not os.path.exists(render_eval__model_path):
+            os.makedirs(render_eval__model_path)
         else:
-            files = glob.glob(f"{train_render_model_path}/*")
+            files = glob.glob(f"{render_eval__model_path}/*")
             for f in files:
                 os.remove(f)
-        if not os.path.exists(uncertainties_train_path):
-            os.makedirs(uncertainties_train_path)
-        init_uncert_file(file=uncertainties_file_path)
+        if not os.path.exists(uncertainties_eval_path):
+            os.makedirs(uncertainties_eval_path)
+        init_uncert_file(file=uncertainties_eval_model_path)
     print(colored("Data folders created successfully", "green"))
 
     # Virtual display
@@ -209,17 +209,8 @@ if __name__ == "__main__":
     print(colored(f"Using: {device}", "green"))
 
     # Init logger
-    logger = Logger("inv-pendulum-dqn", args.model, run_name, str(run_id), args=vars(args))
+    logger = Logger("highway-ddqn", args.model, run_name, str(run_id), args=vars(args))
     config = logger.get_config()
-
-    # Actions
-    actions = get_actions(config["actions"], config["type_actions"])
-
-    # Noise parser
-    if config["noise"]:
-        add_noise = [float(bound) for bound in config["noise"].split(",")]
-    else:
-        add_noise = None
 
     # Init Agent and Environment
     print(colored("Initializing agent and environments", "blue"))
@@ -227,16 +218,15 @@ if __name__ == "__main__":
         state_stack=config["state_stack"],
         action_repeat=config["action_repeat"],
         seed=config["train_seed"],
-        noise=add_noise,
-        done_reward_threshold=-1000
+        version=0,
     )
     eval_env = Env(
         state_stack=config["state_stack"],
         action_repeat=config["action_repeat"],
         seed=config["eval_seed"],
-        path_render=train_render_model_path if config["eval_render"] else None,
+        path_render=render_eval__model_path if config["eval_render"] else None,
         evaluations=config["evaluations"],
-        done_reward_threshold=-1000
+        version=0,
     )
     Transition = namedtuple(
         "Transition", ("state", "action", "next_state", "reward", "done")
@@ -244,7 +234,7 @@ if __name__ == "__main__":
     buffer = ReplayMemory(
         config["buffer_capacity"],
         config["batch_size"],
-        Transition
+        Transition,
     )
     epsilon = Epsilon(
         max_steps=config["epsilon_max_steps"],
@@ -258,14 +248,14 @@ if __name__ == "__main__":
         model=config["model"],
         state_stack=config["state_stack"],
         input_dim=env.observation_dims,
-        output_dim=len(actions),
+        output_dim=len(env.actions),
         architecture=architecture,
     ).to(device)
     model2 = make_model(
         model=config["model"],
         state_stack=config["state_stack"],
         input_dim=env.observation_dims,
-        output_dim=len(actions),
+        output_dim=len(env.actions),
         architecture=architecture,
     ).to(device)
     agent = make_agent(
@@ -274,32 +264,15 @@ if __name__ == "__main__":
         gamma=config["gamma"],
         buffer=buffer,
         logger=logger,
-        actions=actions,
+        actions=env.actions,
         epsilon=epsilon,
         device=device,
         lr=config["learning_rate"],
-        nb_nets=config["nb_nets"],
     )
     init_epoch = 0
-    if config["from_checkpoint"]:
-        init_epoch = agent.load(config["from_checkpoint"])
     print(colored("Agent and environments created successfully", "green"))
 
-    noise_print = "not using noise"
-    if env.use_noise:
-        if env.generate_noise:
-            noise_print = f"using noise with [{env.noise_lower}, {env.noise_upper}] std bounds"
-        else:
-            noise_print = f"using noise with [{env.random_noise}] std"
-
     episodes = config["episodes"]
-    print(
-        colored(
-            f"Training {type(agent)} during {episodes} epochs and {noise_print}",
-            "magenta",
-        )
-    )
-
     for name, param in config.items():
         print(colored(f"{name}: {param}", "cyan"))
 

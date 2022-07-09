@@ -8,7 +8,7 @@ class Env():
     Environment wrapper for CarRacing 
     """
 
-    def __init__(self, state_stack, action_repeat, seed=None, path_render=None, validations=1):
+    def __init__(self, state_stack, action_repeat, seed=None, path_render=None, evaluations=1, version=0):
         gym.logger.set_level(200)
 
         register(
@@ -18,22 +18,26 @@ class Env():
 
         self.render_path = path_render is not None
         if not self.render_path:
-            self.env = gym.make('highway-v1')
+            self.env = gym.make(f'highway-v{version}')
         else:
             from gym.wrappers.monitoring.video_recorder import VideoRecorder
 
-            self.validations = validations
-            self.idx_val = validations // 2
+            self.evaluations = evaluations
+            self.idx_val = evaluations // 2
             self.env = gym.make('highway-v1')
             metadata = {
                 "render_fps": 60
                 # "video.frames_per_second": 60
             }
-            self.recorder = VideoRecorder(self.env, base_path=path_render, enabled=lambda episode_id: episode_id % validations == self.idx_val, metadata=metadata)
+            self.recorder = VideoRecorder(self.env, base_path=path_render, enabled=lambda episode_id: episode_id % evaluations == self.idx_val, metadata=metadata)
             # self.env = Monitor(gym.make('highway-v1', verbose=0), path_render,
-            #                    video_callable=lambda episode_id: episode_id % validations == self.idx_val, force=True)
+            #                    video_callable=lambda episode_id: episode_id % evaluations == self.idx_val, force=True)
         # self.reward_threshold = self.env.spec.reward_threshold
         self.env.seed(seed)
+        self.env.config["duration"] = 60
+        self.env.config["offroad_terminal"] = True
+        self.env.config["policy_frequency"] = 1/15
+        self.env.config["simulation_frequency"] = 15
 
         self.state_stack = deque([], maxlen=state_stack)
         self.action_repeat = action_repeat
@@ -41,6 +45,7 @@ class Env():
         self.action_space = self.env.action_space
         self.observation_type = self.env.observation_type
         self.actions = [i for i in range(5)]
+        self.observation_dims = 5*5*state_stack
 
     
     def close(self):
