@@ -6,7 +6,7 @@ import glob
 from termcolor import colored
 from pyvirtualdisplay import Display
 from collections import namedtuple
-import numpy as np
+import warnings
 
 import sys
 
@@ -19,6 +19,8 @@ from components.uncert_agents import make_agent
 from components.epsilon import Epsilon
 from components.trainer import Trainer
 from models import make_model
+
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -102,14 +104,14 @@ if __name__ == "__main__":
         "-EMS",
         "--epsilon-max-steps",
         type=int,
-        default=25000,
+        default=1500,
         help="Max Epsilon Steps parameter, when epsilon is close to the minimum",
     )
 
     # Training Config
     train_config = parser.add_argument_group("Train config")
     train_config.add_argument(
-        "-E", "--episodes", type=int, default=50000, help="Number of training episode"
+        "-E", "--episodes", type=int, default=3000, help="Number of training episode"
     )
     train_config.add_argument(
         "-D",
@@ -218,7 +220,7 @@ if __name__ == "__main__":
         state_stack=config["state_stack"],
         action_repeat=config["action_repeat"],
         seed=config["train_seed"],
-        version=0,
+        version=1,
     )
     eval_env = Env(
         state_stack=config["state_stack"],
@@ -226,7 +228,7 @@ if __name__ == "__main__":
         seed=config["eval_seed"],
         path_render=render_eval__model_path if config["eval_render"] else None,
         evaluations=config["evaluations"],
-        version=0,
+        version=1,
     )
     Transition = namedtuple(
         "Transition", ("state", "action", "next_state", "reward", "done")

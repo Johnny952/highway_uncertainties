@@ -13,3 +13,4 @@ tqdm
 nvidia-ml-py3
 torchbnn
 highway-env
+protobuf==3.20.*

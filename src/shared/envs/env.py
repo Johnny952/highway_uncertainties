@@ -8,7 +8,7 @@ class Env():
     Environment wrapper for CarRacing 
     """
 
-    def __init__(self, state_stack, action_repeat, seed=None, path_render=None, evaluations=1, version=0):
+    def __init__(self, state_stack, action_repeat, seed=None, path_render=None, evaluations=1, version=1):
         gym.logger.set_level(200)
 
         register(
@@ -24,7 +24,7 @@ class Env():
 
             self.evaluations = evaluations
             self.idx_val = evaluations // 2
-            self.env = gym.make('highway-v1')
+            self.env = gym.make(f'highway-v{version}')
             metadata = {
                 "render_fps": 60
                 # "video.frames_per_second": 60
@@ -45,7 +45,7 @@ class Env():
         self.action_space = self.env.action_space
         self.observation_type = self.env.observation_type
         self.actions = [i for i in range(5)]
-        self.observation_dims = 5*5*state_stack
+        self.observation_dims = 5*5
 
     
     def close(self):
