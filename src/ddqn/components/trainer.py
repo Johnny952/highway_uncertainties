@@ -20,6 +20,7 @@ class Trainer:
         model_name="base",
         checkpoint_every=10,
         debug=False,
+        render=False,
     ) -> None:
         self._logger = logger
         self._agent = agent
@@ -32,6 +33,7 @@ class Trainer:
         self._model_name = model_name
         self._checkpoint_every = checkpoint_every
         self._debug = debug
+        self._render = render
 
         self.best_model_path = f"param/best_{model_name}.pkl"
         self.checkpoint_model_path = f"param/checkpoint_{model_name}.pkl"
@@ -129,6 +131,7 @@ class Trainer:
                     [epis.view(-1).cpu().numpy()[0], aleat.view(-1).cpu().numpy()[0]]
                 )
                 next_state, reward, die = self._eval_env.step(action)[:3]
+
                 score += reward
                 state = next_state
                 steps += 1

@@ -290,6 +290,7 @@ if __name__ == "__main__":
         model_name=run_name,
         checkpoint_every=10,
         debug=config["debug"],
+        render=config["eval_render"],
     )
 
     trainer.run()

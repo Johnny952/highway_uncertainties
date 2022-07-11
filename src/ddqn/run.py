@@ -14,7 +14,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 display = Display(visible=0, size=(1400, 900))
 display.start()
 
-env = Env(0, 0, path_render='render/render')
+env = Env(2, 1, path_render='render')
 
 done = False
 obs = env.reset()
