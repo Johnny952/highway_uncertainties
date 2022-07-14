@@ -1,4 +1,3 @@
-from tkinter.tix import Tree
 import gym
 import numpy as np
 from gym.envs.registration import register
@@ -28,7 +27,7 @@ class Env():
             #                    video_callable=lambda episode_id: episode_id % evaluations == self.idx_val, force=True)
         # self.reward_threshold = self.env.spec.reward_threshold
         self.env.seed(seed)
-        self.env.config["duration"] = 30
+        self.env.config["duration"] = 600
         self.env.config["offroad_terminal"] = True
         self.fps = 7.5
         self.env.config["policy_frequency"] = 1/self.fps
