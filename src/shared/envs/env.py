@@ -1,7 +1,8 @@
 import gym
 import numpy as np
 from gym.envs.registration import register
-from gym.wrappers.monitoring.video_recorder import VideoRecorder
+#from gym.wrappers.monitoring.video_recorder import VideoRecorder
+from gym.wrappers.record_video import RecordVideo
 from collections import deque
 
 class Env():
@@ -23,15 +24,17 @@ class Env():
         if self._render:
             self.evaluations = evaluations
             self.idx_val = evaluations // 2
+            self.env = RecordVideo(self.env, video_folder=self.path_render, episode_trigger=lambda e: e % self.evaluations == self.idx_val)
+            self.env.unwrapped.set_record_video_wrapper(self.env)
             # self.env = Monitor(gym.make('highway-v1', verbose=0), path_render,
             #                    video_callable=lambda episode_id: episode_id % evaluations == self.idx_val, force=True)
         # self.reward_threshold = self.env.spec.reward_threshold
         self.env.seed(seed)
-        self.env.config["duration"] = 600
-        self.env.config["offroad_terminal"] = True
-        self.fps = 7.5
-        self.env.config["policy_frequency"] = 1/self.fps
-        self.env.config["simulation_frequency"] = self.fps
+        # self.env.config["duration"] = 600
+        # self.env.config["offroad_terminal"] = True
+        self.fps = 15
+        # self.env.config["policy_frequency"] = 1/self.fps
+        # self.env.config["simulation_frequency"] = self.fps
 
         self.env.metadata["render_modes"] = self.env.metadata["render.modes"]
         self.env.metadata["video.frames_per_second"] = self.fps
@@ -46,30 +49,30 @@ class Env():
         self.observation_dims = 5*5
 
         self.episode = -1
-        self.recorder_initialized = False
+        # self.recorder_initialized = False
     
     def close(self):
         self.env.close()
-        if self._render:
-            self.recorder.close()
+        # if self._render:
+        #     self.recorder.close()
 
-    def create_recorder(self):
-        if self.recorder_initialized:
-            self.recorder.close()
+    # def create_recorder(self):
+    #     if self.recorder_initialized:
+    #         self.recorder.close()
 
-        self.recorder_initialized = True
-        self.recorder = VideoRecorder(
-            self.env,
-            base_path=f"{self.path_render}/{str(self.episode)}",
-            enabled=self.episode % self.evaluations == self.idx_val,
-        )
-        self.recorder.frames_per_sec = 15
+    #     self.recorder_initialized = True
+    #     self.recorder = VideoRecorder(
+    #         self.env,
+    #         base_path=f"{self.path_render}/{str(self.episode)}",
+    #         enabled=self.episode % self.evaluations == self.idx_val,
+    #     )
+    #     self.recorder.frames_per_sec = 15
         
     def reset(self):
         self.episode += 1
         state = self.env.reset()
-        if self._render:
-            self.create_recorder()
+        # if self._render:
+        #     self.create_recorder()
 
         for _ in range(self.state_stack.maxlen):
             self.state_stack.append(state)
@@ -81,8 +84,8 @@ class Env():
         info = {}
         for _ in range(self.action_repeat):
             state, reward, die, info = self.env.step(action)
-            if self._render:
-                self.render()
+            # if self._render:
+            #     self.render()
             total_steps += 1
             total_reward += reward
             if die:
@@ -95,7 +98,8 @@ class Env():
         return np.array(self.state_stack), total_reward, die, info
 
     def render(self, *arg):
-        return self.recorder.capture_frame()
+        return self.env.render(*arg)
+        # return self.recorder.capture_frame()
 
     def spawn_vehicle(self):
         self.env.env.env.spawn_vehicle()

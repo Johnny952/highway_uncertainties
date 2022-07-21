@@ -137,6 +137,7 @@ class Trainer:
                 steps += 1
 
             uncert = np.array(uncert)
+            print(f"\n{steps}")
             if not self._debug:
                 save_uncert(
                     episode_nb,
