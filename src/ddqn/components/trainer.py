@@ -13,8 +13,7 @@ class Trainer:
         env: Env,
         eval_env: Env,
         logger: Logger,
-        episodes: int,
-        init_ep: int = 0,
+        steps: int,
         nb_evaluations: int = 1,
         eval_interval: int = 10,
         model_name="base",
@@ -26,8 +25,7 @@ class Trainer:
         self._agent = agent
         self._env = env
         self._eval_env = eval_env
-        self._init_ep = init_ep
-        self._nb_episodes = episodes
+        self._nb_steps = steps
         self._nb_evaluations = nb_evaluations
         self._eval_interval = eval_interval
         self._model_name = model_name
@@ -45,8 +43,10 @@ class Trainer:
 
     def run(self):
         running_score = 0
+        i_ep = 0
 
-        for i_ep in tqdm(range(self._init_ep, self._nb_episodes), 'Training'):
+        while self._global_step  < self._nb_steps:
+            print(f"\rTraning episode: {i_ep}",end="")
             metrics = {
                 "Train Episode": i_ep,
                 "Episode Running Score": float(running_score),
@@ -55,8 +55,9 @@ class Trainer:
             }
             state = self._env.reset()
             rewards = []
+            done = False
 
-            for _ in range(1000):
+            while not done:
                 action, action_idx = self._agent.select_action(state)[:2]
                 next_state, reward, done, info = self._env.step(action)
                 if self._agent.store_transition(
@@ -68,8 +69,7 @@ class Trainer:
                 rewards.append(reward)
                 state = next_state
                 self._global_step += 1
-                if done:
-                    break
+
             running_score = running_score * 0.99 + metrics["Episode Score"] * 0.01
             if running_score > self._max_running_score:
                 self._max_running_score = running_score
@@ -94,16 +94,8 @@ class Trainer:
             # Save checkpoint
             if (i_ep + 1) % self._checkpoint_every == 0 and not self._debug:
                 self._agent.save(i_ep, path=self.checkpoint_model_path)
-            # Stop training
-            # if running_score > self._env.reward_threshold:
-            #     print(
-            #         "Solved! Running reward is now {} and the last episode runs to {}!".format(
-            #             running_score, metrics["Episode Score"]
-            #         )
-            #     )
-            #     if not self._debug:
-            #         self._agent.save(i_ep, path=self.best_model_path)
-            #     break
+            
+            i_ep += 1
 
     def eval(self, episode_nb, mode='eval'):
         assert mode in ['train', 'eval', 'test0', 'test']

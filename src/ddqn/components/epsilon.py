@@ -62,5 +62,5 @@ class Epsilon:
 
 if __name__ == "__main__":
     # eps = Epsilon(1000, method="inverse_sigmoid", factor=10)
-    eps = Epsilon(3000, method="exp", factor=7)
-    eps.plot_epsilon(3000)
+    eps = Epsilon(500000, method="linear", factor=7)
+    eps.plot_epsilon(1000000)

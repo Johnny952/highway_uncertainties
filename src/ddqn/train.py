@@ -104,14 +104,14 @@ if __name__ == "__main__":
         "-EMS",
         "--epsilon-max-steps",
         type=int,
-        default=1500,
+        default=500000,
         help="Max Epsilon Steps parameter, when epsilon is close to the minimum",
     )
 
     # Training Config
     train_config = parser.add_argument_group("Train config")
     train_config.add_argument(
-        "-E", "--episodes", type=int, default=3000, help="Number of training episode"
+        "-S", "--steps", type=int, default=1000000, help="Number of training steps"
     )
     train_config.add_argument(
         "-D",
@@ -271,10 +271,9 @@ if __name__ == "__main__":
         device=device,
         lr=config["learning_rate"],
     )
-    init_epoch = 0
     print(colored("Agent and environments created successfully", "green"))
 
-    episodes = config["episodes"]
+    steps = config["steps"]
     for name, param in config.items():
         print(colored(f"{name}: {param}", "cyan"))
 
@@ -283,8 +282,7 @@ if __name__ == "__main__":
         env=env,
         eval_env=eval_env,
         logger=logger,
-        episodes=episodes,
-        init_ep=init_epoch,
+        steps=steps,
         nb_evaluations=config["evaluations"],
         eval_interval=config["eval_interval"],
         model_name=run_name,
