@@ -69,6 +69,7 @@ class Trainer:
                 rewards.append(reward)
                 state = next_state
                 self._global_step += 1
+                self._agent.epsilon_step()
 
             running_score = running_score * 0.99 + metrics["Episode Score"] * 0.01
             if running_score > self._max_running_score:
@@ -81,8 +82,6 @@ class Trainer:
             metrics["Episode Mean Reward"] = float(np.mean(rewards))
             # metrics["Episode Noise"] = float(info["noise"])
             self._logger.log(metrics)
-
-            self._agent.epsilon_step()
 
             # Eval agent
             if (i_ep + 1) % self._eval_interval == 0:
