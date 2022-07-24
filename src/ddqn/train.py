@@ -289,6 +289,7 @@ if __name__ == "__main__":
         checkpoint_every=10,
         debug=config["debug"],
         render=config["eval_render"],
+        save_obs=config["model"] == "vae",
     )
 
     trainer.run()

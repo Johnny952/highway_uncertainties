@@ -4,6 +4,7 @@ from tqdm import tqdm
 from shared.utils.uncert_file import save_uncert
 from shared.envs.env import Env
 from shared.components.logger import Logger
+from shared.components.dataset import Dataset
 from components.uncert_agents.base_agent import BaseAgent
 
 class Trainer:
@@ -20,6 +21,7 @@ class Trainer:
         checkpoint_every=10,
         debug=False,
         render=False,
+        save_obs=False,
     ) -> None:
         self._logger = logger
         self._agent = agent
@@ -35,6 +37,10 @@ class Trainer:
 
         self.best_model_path = f"param/best_{model_name}.pkl"
         self.checkpoint_model_path = f"param/checkpoint_{model_name}.pkl"
+
+        self._save_obs = save_obs
+        if save_obs:
+            self._dataset = Dataset('dataset.hdf5', mode='w')
 
         self._best_score = -1e10
         self._eval_nb = 0
@@ -56,8 +62,11 @@ class Trainer:
             state = self._env.reset()
             rewards = []
             done = False
+            i_step = 0
 
             while not done:
+                if self._save_obs:
+                    self._dataset.push(state, i_ep, i_step)
                 action, action_idx = self._agent.select_action(state)[:2]
                 next_state, reward, done, info = self._env.step(action)
                 if self._agent.store_transition(
@@ -69,6 +78,7 @@ class Trainer:
                 rewards.append(reward)
                 state = next_state
                 self._global_step += 1
+                i_step += 1
                 self._agent.epsilon_step()
 
             running_score = running_score * 0.99 + metrics["Episode Score"] * 0.01
@@ -128,7 +138,6 @@ class Trainer:
                 steps += 1
 
             uncert = np.array(uncert)
-            print(f"\n{steps}")
             if not self._debug:
                 save_uncert(
                     episode_nb,

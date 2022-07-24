@@ -1,6 +1,3 @@
-from torch.utils.data.sampler import BatchSampler, SubsetRandomSampler
-from torch.distributions import Beta
-import torch.nn.functional as F
 import torch.nn as nn
 import torch.optim as optim
 import torch
@@ -9,6 +6,7 @@ import numpy as np
 from shared.utils.replay_buffer import ReplayMemory
 from shared.components.logger import Logger
 from ddqn.components.epsilon import Epsilon
+
 
 class BaseAgent:
     def __init__(
@@ -23,7 +21,7 @@ class BaseAgent:
         device="cpu",
         lr=1e-3,
         nb_nets=None,
-        clip_grad: bool=False,
+        clip_grad: bool = False,
         **kwargs,
     ):
         self._logger = logger
@@ -48,13 +46,13 @@ class BaseAgent:
         self.training_step = 0
 
         logger.watch(self._model1)
-    
+
     def get_epsilon(self):
         return self._epsilon.epsilon()
 
     def epsilon_step(self):
         return self._epsilon.step()
-    
+
     def select_action(self, state: np.ndarray, eval=False):
         aleatoric = torch.Tensor([0])
         epistemic = torch.Tensor([0])
@@ -86,9 +84,11 @@ class BaseAgent:
 
     def store_transition(self, state, action_idx, next_state, reward, done):
         self._buffer.push(
-            torch.from_numpy(np.array(state, dtype=np.float32)).unsqueeze(dim=0),
+            torch.from_numpy(np.array(state, dtype=np.float32)
+                             ).unsqueeze(dim=0),
             action_idx.unsqueeze(dim=0),
-            torch.from_numpy(np.array(next_state, dtype=np.float32)).unsqueeze(dim=0),
+            torch.from_numpy(
+                np.array(next_state, dtype=np.float32)).unsqueeze(dim=0),
             torch.Tensor([reward]),
             torch.Tensor([done]),
         )
@@ -97,8 +97,8 @@ class BaseAgent:
     def save(self, epoch, path="param/ppo_net_params.pkl"):
         tosave = {
             "epoch": epoch,
-            "model1_state_disct": self._model1.state_dict(),
-            "model2_state_disct": self._model2.state_dict(),
+            "model1_state_dict": self._model1.state_dict(),
+            "model2_state_dict": self._model2.state_dict(),
             "optimizer1_state_dict": self._optimizer1.state_dict(),
             "optimizer2_state_dict": self._optimizer2.state_dict(),
         }
@@ -106,8 +106,8 @@ class BaseAgent:
 
     def load(self, path, eval_mode=False):
         checkpoint = torch.load(path)
-        self._model1.load_state_dict(checkpoint["model1_state_disct"])
-        self._model2.load_state_dict(checkpoint["model2_state_disct"])
+        self._model1.load_state_dict(checkpoint["model1_state_dict"])
+        self._model2.load_state_dict(checkpoint["model2_state_dict"])
         self._optimizer1.load_state_dict(checkpoint["optimizer1_state_dict"])
         self._optimizer2.load_state_dict(checkpoint["optimizer2_state_dict"])
 
@@ -123,7 +123,8 @@ class BaseAgent:
         dataset = self._buffer.sample()
 
         states = torch.cat(dataset.state).float().to(self._device)
-        action_idx = torch.cat(dataset.action).type(torch.int64).to(self._device)
+        action_idx = torch.cat(dataset.action).type(
+            torch.int64).to(self._device)
         next_states = torch.cat(dataset.next_state).float().to(self._device)
         rewards = torch.cat(dataset.reward).to(self._device)
         dones = torch.cat(dataset.done).to(self._device)
@@ -132,7 +133,8 @@ class BaseAgent:
 
     def update(self):
         states, actions, next_states, rewards, dones = self.sample_buffer()
-        loss1, loss2 = self.compute_loss(states, actions, next_states, rewards, dones)
+        loss1, loss2 = self.compute_loss(
+            states, actions, next_states, rewards, dones)
 
         self._optimizer1.zero_grad()
         loss1.backward()
