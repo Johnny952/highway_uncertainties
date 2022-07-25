@@ -77,3 +77,6 @@ class CustomHighwayEnv(HighwayEnv):
         vehicle = CustomIDMVehicle.create_random_front_vehicle(self.road, self.controlled_vehicles[0], speed=self.config["other_vehicles_initial_speed"], spacing=1 / self.config["vehicles_density"])
         vehicle.randomize_behavior()
         self.road.vehicles.append(vehicle)
+
+    def get_vehicle_speed(self):
+        return self.controlled_vehicles[0].speed

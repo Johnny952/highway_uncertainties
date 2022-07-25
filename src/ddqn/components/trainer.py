@@ -58,6 +58,7 @@ class Trainer:
                 "Episode Running Score": float(running_score),
                 "Episode Score": 0,
                 "Episode Steps": 0,
+                "Episode Acc Speed": 0,
             }
             state = self._env.reset()
             rewards = []
@@ -75,6 +76,7 @@ class Trainer:
                     self._agent.update()
                 metrics["Episode Score"] += reward
                 metrics["Episode Steps"] += 1
+                metrics["Episode Acc Speed"] += info["speed"]
                 rewards.append(reward)
                 state = next_state
                 self._global_step += 1

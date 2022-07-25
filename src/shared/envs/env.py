@@ -66,6 +66,7 @@ class Env():
                 break
         
         info["steps"] = total_steps
+        info["speed"] = self.get_speed()
         self.state_stack.append(state)
         assert len(self.state_stack) == self.state_stack.maxlen
 
@@ -76,3 +77,6 @@ class Env():
 
     def spawn_vehicle(self):
         self.env.env.env.spawn_vehicle()
+
+    def get_speed(self):
+        return self.env.env.env.get_vehicle_speed()
