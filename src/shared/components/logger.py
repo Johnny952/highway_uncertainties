@@ -13,3 +13,6 @@ class Logger(object):
     
     def log(self, to_log: dict):
         wandb.log(to_log)
+
+    def close(self):
+        wandb.finish()
