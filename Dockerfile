@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y build-essential
 RUN apt-get update
 RUN sudo apt install -y libosmesa6-dev libgl1-mesa-glx libglfw3
 RUN apt-get install -y libglu1-mesa-dev libgl1-mesa-dev libosmesa6-dev xvfb ffmpeg curl patchelf libglfw3 libglfw3-dev cmake zlib1g zlib1g-dev swig
-RUN pip install gym pyvirtualdisplay > /dev/null 2>&1
+RUN pip install gym==0.24.1 pyvirtualdisplay > /dev/null 2>&1
 
 # Install requirements
 COPY requirements.txt /opt/app/requirements.txt

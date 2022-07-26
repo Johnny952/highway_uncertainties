@@ -17,11 +17,11 @@ class Trainer:
         steps: int,
         nb_evaluations: int = 1,
         eval_interval: int = 10,
-        model_name="base",
-        checkpoint_every=10,
-        debug=False,
-        render=False,
-        save_obs=False,
+        model_name: str="base",
+        checkpoint_every: int=10,
+        debug: bool=False,
+        render: bool=False,
+        save_obs: bool=False,
     ) -> None:
         self._logger = logger
         self._agent = agent
@@ -40,7 +40,7 @@ class Trainer:
 
         self._save_obs = save_obs
         if save_obs:
-            self._dataset = Dataset('dataset.hdf5', mode='w')
+            self._dataset = Dataset('dataset.hdf5', overwrite=True)
 
         self._best_score = -1e10
         self._eval_nb = 0

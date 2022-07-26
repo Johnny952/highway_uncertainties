@@ -261,6 +261,7 @@ if __name__ == "__main__":
         architecture=architecture,
     ).to(device)
     agent = make_agent(
+        agent=config["model"],
         model1=model1,
         model2=model2,
         gamma=config["gamma"],
@@ -295,3 +296,4 @@ if __name__ == "__main__":
     trainer.run()
     env.close()
     eval_env.close()
+    logger.close()

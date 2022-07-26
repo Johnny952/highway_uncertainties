@@ -80,3 +80,9 @@ class CustomHighwayEnv(HighwayEnv):
 
     def get_vehicle_speed(self):
         return self.controlled_vehicles[0].speed
+
+
+if __name__ == "__main__":
+    env = CustomHighwayEnv()
+    
+    print(env.metadata)

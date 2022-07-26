@@ -1,6 +1,7 @@
 .ipynb_checkpoints
 .empty
 .vscode
+*.hdf5
 wandb/
 config.json
 # Render folder
