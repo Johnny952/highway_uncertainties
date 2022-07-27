@@ -26,7 +26,7 @@ class CustomHighwayEnv(HighwayEnv):
             "controlled_vehicles": 1,
             "initial_lane_id": None,
             "initial_speed": 25,#25,
-            "duration": 1000,  # [s]
+            "duration": 40,  # [s]
             "ego_spacing": 2,#2
             "vehicles_density": 1,
             "collision_reward": -1,    # The reward received when colliding with a vehicle.
@@ -37,13 +37,12 @@ class CustomHighwayEnv(HighwayEnv):
             "lane_change_reward": 0,   # The reward received at each lane change action.
             "reward_speed_range": [20, 30],
             "offroad_terminal": True, #False
-            "policy_frequency": 1,
 
             "other_vehicles_initial_speed": None,
             "other_vehicles_delta": None,
 
-            "simulation_frequency": 15,
-            "policy_frequency": 15,
+            # "simulation_frequency": 15,
+            # "policy_frequency": 15,
 
         })
         return config
