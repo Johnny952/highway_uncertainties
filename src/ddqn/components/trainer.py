@@ -78,6 +78,15 @@ class Trainer:
                 metrics["Episode Steps"] += 1
                 metrics["Episode Acc Speed"] += info["speed"]
                 rewards.append(reward)
+
+                if (i_ep + 1) % self._eval_interval == 0:
+                    eval_score = self.eval(i_step)
+
+                    if eval_score > self._best_score and not self._debug:
+                        self._agent.save(i_ep, path=self.best_model_path)
+                        self._best_score = eval_score
+
+
                 state = next_state
                 self._global_step += 1
                 i_step += 1
@@ -96,12 +105,12 @@ class Trainer:
             self._logger.log(metrics)
 
             # Eval agent
-            if (i_ep + 1) % self._eval_interval == 0:
-                eval_score = self.eval(i_ep)
+            # if (i_ep + 1) % self._eval_interval == 0:
+            #     eval_score = self.eval(i_ep)
 
-                if eval_score > self._best_score and not self._debug:
-                    self._agent.save(i_ep, path=self.best_model_path)
-                    self._best_score = eval_score
+            #     if eval_score > self._best_score and not self._debug:
+            #         self._agent.save(i_ep, path=self.best_model_path)
+            #         self._best_score = eval_score
             # Save checkpoint
             if (i_ep + 1) % self._checkpoint_every == 0 and not self._debug:
                 self._agent.save(i_ep, path=self.checkpoint_model_path)
