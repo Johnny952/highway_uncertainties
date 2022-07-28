@@ -26,8 +26,34 @@ class InverseBase(nn.Module):
 
 
 class VAE(nn.Module):
-    def __init__(self, state_stack, input_dim, encoder_arc=[256, 128, 64], decoder_arc=[64, 128, 256], latent_dim=32):
+    def __init__(self,
+        state_stack: int,
+        input_dim: int,
+        encoder_arc: "list[int]"=[256, 128, 64],
+        decoder_arc: "list[int]"=[64, 128, 256],
+        latent_dim: int=32,
+        beta: float=4,
+        gamma: float=100,
+        max_capacity: int=25,
+        Capacity_max_iter: int = 1e5,
+        loss_type:str = 'B',
+    ):
         super(VAE, self).__init__()
+
+        self.latent_dim = latent_dim
+        self.input_dim = input_dim
+        self.encoder_arc = encoder_arc
+        self.decoder_arc = decoder_arc
+        self.beta = beta
+        self.gamma = gamma
+        self.max_capacity = max_capacity
+        self.Capacity_max_iter = Capacity_max_iter
+        assert loss_type in ['B', 'H']
+        self.loss_type = loss_type
+        self.num_iter = 0
+
+        self.C_max = torch.Tensor([max_capacity])
+        self.C_stop_iter = Capacity_max_iter
 
         self.decoder_loss = nn.MSELoss()
         self.encoder = nn.Sequential(
@@ -65,20 +91,32 @@ class VAE(nn.Module):
         return [self.decode(z), x, mu, log_var]
 
     def loss_function(self, *args, **kwargs) -> dict:
+        self.num_iter += 1
         recons = args[0]
         x = args[1]
         mu = args[2]
         log_var = args[3]
-
-        # Account for the minibatch samples from the dataset
-        kld_weight = kwargs['M_N']
+        kld_weight = kwargs['M_N'] # Account for the minibatch samples from the dataset
+        
         recons_loss = self.decoder_loss(recons, torch.flatten(x, start_dim=1))
 
         kld_loss = torch.mean(-0.5 * torch.sum(1 +
                               log_var - mu ** 2 - log_var.exp(), dim=1), dim=0)
 
+        l = {}
+
+        if self.loss_type == 'H': # https://openreview.net/forum?id=Sy2fzU9gl
+            loss = recons_loss + self.beta * kld_weight * kld_loss
+        elif self.loss_type == 'B': # https://arxiv.org/pdf/1804.03599.pdf
+            self.C_max = self.C_max.to(x.device)
+            C = torch.clamp(self.C_max/self.C_stop_iter * self.num_iter, 0, self.C_max.data[0])
+            loss = recons_loss + self.gamma * kld_weight * (kld_loss - C).abs()
+
         loss = recons_loss + kld_weight * kld_loss
-        return {'loss': loss, 'Reconstruction_Loss': recons_loss.detach(), 'kld_loss': kld_loss.detach()}
+        l['loss'] = loss
+        l['Reconstruction_Loss'] = recons_loss.detach()
+        l['kld_loss'] = kld_loss.detach()
+        return l
 
     def sample(self, num_samples: int, current_device: int, **kwargs):
         z = torch.randn(num_samples, self.latent_dim)

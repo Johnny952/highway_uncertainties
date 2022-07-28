@@ -5,13 +5,15 @@ from shared.components.logger import Logger
 from shared.envs.env import Env
 import argparse
 import torch
-import torch.nn as nn
+import torch.utils.data as data
 import torch.optim as optim
 import uuid
 from termcolor import colored
 import warnings
 
 import sys
+
+from shared.models.vae import VAE
 
 sys.path.append('..')
 
@@ -79,6 +81,34 @@ if __name__ == "__main__":
         default=1,
         help='Pytorch seed',
     )
+
+    # VAE Config
+    vae_config = parser.add_argument_group("VAE config")
+    vae_config.add_argument(
+        "-EA", "--encoder-arc", type=str, default='256,128,64', help="VAE Encoder architecture comma separated"
+    )
+    vae_config.add_argument(
+        "-DA", "--decoder-arc", type=str, default='64,128,256', help="VAE Decoder architecture comma separated"
+    )
+    vae_config.add_argument(
+        "-LD", "--latent-dim", type=int, default=32, help="VAE latent dimensions"
+    )
+    vae_config.add_argument(
+        "-B", "--beta", type=float, default=4, help="VAE KLD scale when loss type equal 'H'"
+    )
+    vae_config.add_argument(
+        "-G", "--gamma", type=float, default=100, help="VAE KLD scale when loss type equal 'B'"
+    )
+    vae_config.add_argument(
+        "-MC", "--max-capacity", type=float, default=25, help="Max capacity"
+    )
+    vae_config.add_argument(
+        "-LT", "--loss-type", type=str, default='B', help="VAE loss type, can be 'B' or 'H'"
+    )
+    vae_config.add_argument(
+        "-LR", "--learning-rate", type=float, default=0.001, help="Learning Rate"
+    )
+
 
     # Agent Config
     agent_config = parser.add_argument_group("Agent config")
@@ -150,6 +180,7 @@ if __name__ == "__main__":
         device=device,
         lr=0,
     )
+
     # agent.load(config["model"])
     model1.eval()
     model2.eval()
@@ -161,12 +192,38 @@ if __name__ == "__main__":
         print(colored(f"{name}: {param}", "cyan"))
 
     dataset = Dataset('dataset.hdf5', overwrite=False)
+    train_length = int(len(dataset) * config["train_test_prop"])
+    train_set, val_set = data.random_split(
+        dataset, [train_length, len(dataset) - train_length])
+    train_loader = data.DataLoader(
+        train_set, batch_size=config["batch_size"], shuffle=True)
+    val_loader = data.DataLoader(
+        val_set, batch_size=config["batch_size"], shuffle=True)
+
+    Capacity_max_iter = len(train_loader) * config["epochs"]
+    vae = VAE(
+        state_stack=config["state_stack"],
+        input_dim=env.observation_dims,
+        encoder_arc=config["encoder_arc"],
+        encoder_arc=config["decoder_arc"],
+        latent_dim=config["latent_dim"],
+        beta=config["beta"],
+        gamma=config["gamma"],
+        max_capacity=config["max_capacity"],
+        Capacity_max_iter=Capacity_max_iter,
+        loss_type=config["loss_type"],
+    )
+    vae.to(device)
+    optimizer = optim.Adam(
+            vae.parameters(), lr=config["learning_rate"])
+    agent._vae_lr = config["learning_rate"]
+    agent._vae = vae
+    agent._vae_optimizer = optimizer
 
     agent.update_vae(
-        dataset,
+        train_loader,
+        val_loader,
         logger,
-        batch_size=config["batch_size"],
-        train_test_prop=config["train_test_prop"],
         epochs=config["epochs"],
         kld_weight=config["kld_weight"],
         eval_every=10000,

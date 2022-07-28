@@ -77,15 +77,7 @@ class VAEAgent(BaseAgent):
             self._vae.train()
         return checkpoint["epoch"]
 
-    def update_vae(self, dataset: Dataset, logger: Logger, batch_size: int = 256, train_test_prop: int = 0.9, epochs: int = 10, kld_weight=1, eval_every=1000):
-        train_length = int(len(dataset) * train_test_prop)
-        train_set, val_set = data.random_split(
-            dataset, [train_length, len(dataset) - train_length])
-        train_loader = data.DataLoader(
-            train_set, batch_size=batch_size, shuffle=True)
-        val_loader = data.DataLoader(
-            val_set, batch_size=batch_size, shuffle=True)
-
+    def update_vae(self, train_loader: data.DataLoader, val_loader: data.DataLoader, logger: Logger, epochs: int = 10, kld_weight=1, eval_every=1000):
         index = 0
         eval_idx = 0
 
