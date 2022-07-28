@@ -40,6 +40,12 @@ if __name__ == "__main__":
         help='Path to model',
     )
     train_config.add_argument(
+        "--mode",
+        type=str,
+        default='E',
+        help='VAE model mode, aleatoric "A" or epistemic "E"',
+    )
+    train_config.add_argument(
         "-BS",
         "--batch-size",
         type=int,
@@ -108,7 +114,6 @@ if __name__ == "__main__":
     vae_config.add_argument(
         "-LR", "--learning-rate", type=float, default=0.001, help="Learning Rate"
     )
-
 
     # Agent Config
     agent_config = parser.add_argument_group("Agent config")
@@ -191,7 +196,7 @@ if __name__ == "__main__":
     for name, param in config.items():
         print(colored(f"{name}: {param}", "cyan"))
 
-    dataset = Dataset('dataset.hdf5', overwrite=False)
+    dataset = Dataset(config["dataset"], overwrite=False)
     train_length = int(len(dataset) * config["train_test_prop"])
     train_set, val_set = data.random_split(
         dataset, [train_length, len(dataset) - train_length])
@@ -216,11 +221,19 @@ if __name__ == "__main__":
     vae.to(device)
     optimizer = optim.Adam(
             vae.parameters(), lr=config["learning_rate"])
-    agent._vae_lr = config["learning_rate"]
-    agent._vae = vae
-    agent._vae_optimizer = optimizer
+    if config["mode"] == "E":
+        agent._vae_lr = config["learning_rate"]
+        agent._vae = vae
+        agent._vae_optimizer = optimizer
+    elif config["mode"] == "A":
+        agent._vae2_lr = config["learning_rate"]
+        agent._vae2 = vae
+        agent._vae2_optimizer = optimizer
+    else:
+        raise NotImplementedError('Mode not implemented')
 
     agent.update_vae(
+        config["mode"],
         train_loader,
         val_loader,
         logger,
