@@ -1,8 +1,3 @@
-from models import make_model
-from components.uncert_agents import make_agent
-from shared.components.dataset import Dataset
-from shared.components.logger import Logger
-from shared.envs.env import Env
 import argparse
 import torch
 import torch.utils.data as data
@@ -13,9 +8,13 @@ import warnings
 
 import sys
 
-from shared.models.vae import VAE
-
 sys.path.append('..')
+from models import make_model
+from components.uncert_agents import make_agent
+from shared.components.dataset import Dataset
+from shared.components.logger import Logger
+from shared.models.vae import VAE
+from shared.envs.env import Env
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 

@@ -22,6 +22,8 @@ class Trainer:
         debug: bool=False,
         render: bool=False,
         save_obs: bool=False,
+        save_obs_test: bool=False,
+        dataset_path: str='dataset.hdf5',
     ) -> None:
         self._logger = logger
         self._agent = agent
@@ -39,8 +41,9 @@ class Trainer:
         self.checkpoint_model_path = f"param/checkpoint_{model_name}.pkl"
 
         self._save_obs = save_obs
-        if save_obs:
-            self._dataset = Dataset('dataset.hdf5', overwrite=True)
+        self._save_obs_test = save_obs_test
+        if save_obs or save_obs_test:
+            self._dataset = Dataset(dataset_path, overwrite=True)
 
         self._best_score = -1e10
         self._eval_nb = 0
@@ -138,6 +141,9 @@ class Trainer:
 
             uncert = []
             while not die:
+                if self._save_obs_test:
+                    evaluation = self._eval_nb * self._nb_evaluations + i_val
+                    self._dataset.push(state, evaluation, steps)
                 action, _, (epis, aleat) = self._agent.select_action(state, eval=True)
                 uncert.append(
                     [epis.view(-1).cpu().numpy()[0], aleat.view(-1).cpu().numpy()[0]]

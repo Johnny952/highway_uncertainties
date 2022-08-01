@@ -1,3 +1,4 @@
+import numpy as np
 from highway_env import utils
 from highway_env.utils import near_split
 from highway_env.vehicle.kinematics import Vehicle
@@ -79,7 +80,7 @@ class CustomHighwayEnv(HighwayEnv):
         self.road.vehicles.append(vehicle)
 
     def get_vehicle_speed(self):
-        return self.controlled_vehicles[0].speed
+        return self.vehicle.speed * np.cos(self.vehicle.heading)
 
 
 if __name__ == "__main__":

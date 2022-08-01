@@ -1,12 +1,10 @@
 import torch.optim as optim
-import torch.nn as nn
 import torch
 from tqdm import tqdm
 from torch.utils import data
 
 from .base_agent import BaseAgent
 from shared.models.vae import VAE
-from shared.components.dataset import Dataset
 from shared.components.logger import Logger
 
 
