@@ -12,8 +12,6 @@ from shared.components.logger import SimpleLogger
 from shared.envs.env import Env
 from components.trainer import Trainer
 
-
-
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 if __name__ == "__main__":

@@ -73,13 +73,14 @@ class Trainer:
                     self._dataset.push(state, i_ep, i_step)
                 action, action_idx = self._agent.select_action(state)[:2]
                 next_state, reward, done, info = self._env.step(action)
+                print(info)
                 if self._agent.store_transition(
                     state, action_idx, next_state, reward, done
                 ):
                     self._agent.update()
                 metrics["Episode Score"] += reward
                 metrics["Episode Steps"] += 1
-                metrics["Episode Acc Speed"] += info["speed"]
+                metrics["Episode Acc Speed"] += info["forward_speed"]
                 rewards.append(reward)
 
                 if (i_ep + 1) % self._eval_interval == 0:

@@ -2,6 +2,8 @@ import numpy as np
 from highway_env import utils
 from highway_env.utils import near_split
 from highway_env.vehicle.kinematics import Vehicle
+from highway_env.envs.common.action import Action
+from highway_env.vehicle.controller import ControlledVehicle
 from highway_env.envs import HighwayEnv
 from .custom_behavior import CustomIDMVehicle
 
@@ -33,7 +35,7 @@ class CustomHighwayEnv(HighwayEnv):
             "collision_reward": -1,    # The reward received when colliding with a vehicle.
             "right_lane_reward": 0.1,  # The reward received when driving on the right-most lanes, linearly mapped to
                                        # zero for other lanes.
-            "high_speed_reward": 0.6,  # The reward received when driving at full speed, linearly mapped to zero for
+            "high_speed_reward": 0.4,  # The reward received when driving at full speed, linearly mapped to zero for
                                        # lower speeds according to config["reward_speed_range"].
                                        # (0.4)
             "lane_change_reward": 0,   # The reward received at each lane change action.
@@ -45,9 +47,53 @@ class CustomHighwayEnv(HighwayEnv):
 
             # "simulation_frequency": 15,
             # "policy_frequency": 15,
-
+            "max_speed_reward": 0.1,
+            "max_speed_threshold": 0.97,
         })
         return config
+
+    def _reward(self, action: Action) -> float:
+        """
+        The reward is defined to foster driving at high speed, on the rightmost lanes, and to avoid collisions.
+        :param action: the last action performed
+        :return: the corresponding reward
+        """
+        neighbours = self.road.network.all_side_lanes(self.vehicle.lane_index)
+        lane = self.vehicle.target_lane_index[2] if isinstance(self.vehicle, ControlledVehicle) \
+            else self.vehicle.lane_index[2]
+        # Use forward speed rather than speed, see https://github.com/eleurent/highway-env/issues/268
+        forward_speed = self.vehicle.speed * np.cos(self.vehicle.heading)
+        scaled_speed = utils.lmap(forward_speed, self.config["reward_speed_range"], [0, 1])
+        reward = \
+            + self.config["collision_reward"] * self.vehicle.crashed \
+            + self.config["right_lane_reward"] * lane / max(len(neighbours) - 1, 1) \
+            + self.config["high_speed_reward"] * np.clip(scaled_speed, 0, 1) \
+            + self.config["max_speed_reward"] * (scaled_speed > self.config["max_speed_threshold"])
+        reward = utils.lmap(reward,
+                          [self.config["collision_reward"],
+                           self.config["high_speed_reward"] + self.config["right_lane_reward"] + self.config["max_speed_reward"]],
+                          [0, 1])
+        reward = 0 if not self.vehicle.on_road else reward
+        return reward
+    
+    def _info(self, obs: np.ndarray, action: Action) -> dict:
+        forward_speed = self.vehicle.speed * np.cos(self.vehicle.heading)
+        scaled_speed = utils.lmap(forward_speed, self.config["reward_speed_range"], [0, 1])
+        lane = self.vehicle.target_lane_index[2] if isinstance(self.vehicle, ControlledVehicle) \
+            else self.vehicle.lane_index[2]
+        info = {
+            "speed": self.vehicle.speed,
+            "crashed": self.vehicle.crashed,
+            "action": action,
+            "forward_speed": forward_speed,
+            "scaled_speed": scaled_speed,
+            "lane": lane,
+        }
+        try:
+            info["cost"] = self._cost(action)
+        except NotImplementedError:
+            pass
+        return info
 
     def _create_vehicles(self) -> None:
         """Create some new random vehicles of a given type, and add them on the road."""
@@ -78,9 +124,6 @@ class CustomHighwayEnv(HighwayEnv):
         vehicle = CustomIDMVehicle.create_random_front_vehicle(self.road, self.controlled_vehicles[0], speed=self.config["other_vehicles_initial_speed"], spacing=1 / self.config["vehicles_density"])
         vehicle.randomize_behavior()
         self.road.vehicles.append(vehicle)
-
-    def get_vehicle_speed(self):
-        return self.vehicle.speed * np.cos(self.vehicle.heading)
 
 
 if __name__ == "__main__":
