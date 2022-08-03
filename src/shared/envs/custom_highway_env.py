@@ -33,7 +33,7 @@ class CustomHighwayEnv(HighwayEnv):
             "ego_spacing": 2,#2
             "vehicles_density": 1,
             "collision_reward": -1,    # The reward received when colliding with a vehicle.
-            "right_lane_reward": 0.1,  # The reward received when driving on the right-most lanes, linearly mapped to
+            "right_lane_reward": 0.01,  # The reward received when driving on the right-most lanes, linearly mapped to
                                        # zero for other lanes.
             "high_speed_reward": 0.4,  # The reward received when driving at full speed, linearly mapped to zero for
                                        # lower speeds according to config["reward_speed_range"].
@@ -88,6 +88,7 @@ class CustomHighwayEnv(HighwayEnv):
             "forward_speed": forward_speed,
             "scaled_speed": scaled_speed,
             "lane": lane,
+            "offroad": not self.vehicle.on_road,
         }
         try:
             info["cost"] = self._cost(action)

@@ -18,7 +18,7 @@ class Trainer:
         nb_evaluations: int = 1,
         eval_interval: int = 10,
         model_name: str="base",
-        checkpoint_every: int=10,
+        checkpoint_every: int=1000,
         debug: bool=False,
         render: bool=False,
         save_obs: bool=False,
@@ -61,10 +61,11 @@ class Trainer:
                 "Episode Running Score": float(running_score),
                 "Episode Score": 0,
                 "Episode Steps": 0,
-                "Episode Acc Speed": 0,
+                "Episode Mean Speed": 0,
             }
             state = self._env.reset()
             rewards = []
+            speeds = []
             done = False
             i_step = 0
 
@@ -73,22 +74,26 @@ class Trainer:
                     self._dataset.push(state, i_ep, i_step)
                 action, action_idx = self._agent.select_action(state)[:2]
                 next_state, reward, done, info = self._env.step(action)
-                print(info)
                 if self._agent.store_transition(
                     state, action_idx, next_state, reward, done
                 ):
                     self._agent.update()
                 metrics["Episode Score"] += reward
                 metrics["Episode Steps"] += 1
-                metrics["Episode Acc Speed"] += info["forward_speed"]
+                speeds.append(info["forward_speed"])
                 rewards.append(reward)
 
+                # Eval agent
                 if (i_ep + 1) % self._eval_interval == 0:
                     eval_score = self.eval(i_step)
 
                     if eval_score > self._best_score and not self._debug:
                         self._agent.save(i_ep, path=self.best_model_path)
                         self._best_score = eval_score
+
+                # Save checkpoint
+                if (i_ep + 1) % self._checkpoint_every == 0 and not self._debug:
+                    self._agent.save(i_ep, path=self.checkpoint_model_path)
 
 
                 state = next_state
@@ -99,6 +104,8 @@ class Trainer:
             running_score = running_score * 0.99 + metrics["Episode Score"] * 0.01
             if running_score > self._max_running_score:
                 self._max_running_score = running_score
+            metrics["Episode Mean Speed"] = np.mean(speeds)
+            metrics["Episode Std Speed"] = np.std(speeds)
             metrics["Episode Running Score"] = running_score
             metrics["Max Episode Running Score"] = self._max_running_score
             metrics["Epsilon"] = self._agent.get_epsilon()
@@ -108,18 +115,9 @@ class Trainer:
             # metrics["Episode Noise"] = float(info["noise"])
             self._logger.log(metrics)
 
-            # Eval agent
-            # if (i_ep + 1) % self._eval_interval == 0:
-            #     eval_score = self.eval(i_ep)
-
-            #     if eval_score > self._best_score and not self._debug:
-            #         self._agent.save(i_ep, path=self.best_model_path)
-            #         self._best_score = eval_score
-            # Save checkpoint
-            if (i_ep + 1) % self._checkpoint_every == 0 and not self._debug:
-                self._agent.save(i_ep, path=self.checkpoint_model_path)
-            
             i_ep += 1
+        
+        self._agent.save(i_ep, path=self.checkpoint_model_path)
 
     def eval(self, episode_nb, mode='eval'):
         assert mode in ['train', 'eval', 'test0', 'test']

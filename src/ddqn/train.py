@@ -287,7 +287,7 @@ if __name__ == "__main__":
         nb_evaluations=config["evaluations"],
         eval_interval=config["eval_interval"],
         model_name=run_name,
-        checkpoint_every=10,
+        checkpoint_every=500,
         debug=config["debug"],
         render=config["eval_render"],
         save_obs=config["model"] == "vae",
