@@ -104,14 +104,14 @@ if __name__ == "__main__":
         "-EMS",
         "--epsilon-max-steps",
         type=int,
-        default=50000,
+        default=100000,
         help="Max Epsilon Steps parameter, when epsilon is close to the minimum",
     )
 
     # Training Config
     train_config = parser.add_argument_group("Train config")
     train_config.add_argument(
-        "-S", "--steps", type=int, default=100000, help="Number of training steps"
+        "-S", "--steps", type=int, default=200000, help="Number of training steps"
     )
     train_config.add_argument(
         "-D",
@@ -124,7 +124,7 @@ if __name__ == "__main__":
         "-EI",
         "--eval-interval",
         type=int,
-        default=1000,
+        default=2000,
         help="Interval between evaluations",
     )
     train_config.add_argument(
