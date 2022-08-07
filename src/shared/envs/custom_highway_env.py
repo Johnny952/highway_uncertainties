@@ -46,7 +46,7 @@ class CustomHighwayEnv(HighwayEnv):
             "other_vehicles_delta": None,
 
             # "simulation_frequency": 15,
-            "policy_frequency": 4,
+            "policy_frequency": 8,
             "max_speed_reward": 0.7,
             "max_speed_threshold": 0.97,
         })
