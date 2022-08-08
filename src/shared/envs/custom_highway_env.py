@@ -7,6 +7,9 @@ from highway_env.vehicle.controller import ControlledVehicle
 from highway_env.envs import HighwayEnv
 from .custom_behavior import CustomIDMVehicle
 
+DURATION = 40 # [s]
+POLICY_FREQUENCY = 8 # [1/s]
+
 class CustomHighwayEnv(HighwayEnv):
     """
     A highway driving environment.
@@ -29,11 +32,11 @@ class CustomHighwayEnv(HighwayEnv):
             "controlled_vehicles": 1,
             "initial_lane_id": None,
             "initial_speed": 25,#25,
-            "duration": 80,  # [s]
+            "duration": DURATION * POLICY_FREQUENCY,  # [s]
             "ego_spacing": 2,#2
             "vehicles_density": 1,
-            "collision_reward": 0,    # The reward received when colliding with a vehicle.
-            "right_lane_reward": 0,  # The reward received when driving on the right-most lanes, linearly mapped to
+            "collision_reward": -10,    # The reward received when colliding with a vehicle.
+            "right_lane_reward": 0.1,  # The reward received when driving on the right-most lanes, linearly mapped to
                                        # zero for other lanes.
             "high_speed_reward": 0.3,  # The reward received when driving at full speed, linearly mapped to zero for
                                        # lower speeds according to config["reward_speed_range"].
@@ -46,8 +49,8 @@ class CustomHighwayEnv(HighwayEnv):
             "other_vehicles_delta": None,
 
             # "simulation_frequency": 15,
-            "policy_frequency": 8,
-            "max_speed_reward": 0.7,
+            "policy_frequency": POLICY_FREQUENCY,
+            "max_speed_reward": 0.6,
             "max_speed_threshold": 0.97,
         })
         return config
