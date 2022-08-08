@@ -106,6 +106,8 @@ class Trainer:
                 self._max_running_score = running_score
             metrics["Episode Mean Speed"] = np.mean(speeds)
             metrics["Episode Std Speed"] = np.std(speeds)
+            metrics["Episode Max Speed"] = np.max(speeds)
+            metrics["Episode Min Speed"] = np.min(speeds)
             metrics["Episode Running Score"] = running_score
             metrics["Max Episode Running Score"] = self._max_running_score
             metrics["Epsilon"] = self._agent.get_epsilon()
@@ -129,6 +131,7 @@ class Trainer:
             f"{wandb_mode} Mean Epist Uncert": 0,
             f"{wandb_mode} Mean Aleat Uncert": 0,
             f"{wandb_mode} Mean Steps": 0,
+            f"{wandb_mode} Mean Speed": 0,
         }
         mean_uncert = np.array([0, 0], dtype=np.float64)
 
@@ -137,6 +140,7 @@ class Trainer:
             steps = 0
             state = self._eval_env.reset()
             die = False
+            speeds = []
 
             uncert = []
             while not die:
@@ -147,11 +151,12 @@ class Trainer:
                 uncert.append(
                     [epis.view(-1).cpu().numpy()[0], aleat.view(-1).cpu().numpy()[0]]
                 )
-                next_state, reward, die = self._eval_env.step(action)[:3]
+                next_state, reward, die, info = self._eval_env.step(action)[:4]
 
                 score += reward
                 state = next_state
                 steps += 1
+                speeds.append(info["forward_speed"])
 
             uncert = np.array(uncert)
             if not self._debug:
@@ -167,6 +172,7 @@ class Trainer:
             mean_uncert += np.mean(uncert, axis=0) / self._nb_evaluations
             metrics[f"{wandb_mode} Mean Score"] += score / self._nb_evaluations
             metrics[f"{wandb_mode} Mean Steps"] += steps / self._nb_evaluations
+            metrics[f"{wandb_mode} Mean Speed"] += np.mean(speeds) / self._nb_evaluations
         metrics[f"{wandb_mode} Mean Epist Uncert"] = mean_uncert[0]
         metrics[f"{wandb_mode} Mean Aleat Uncert"] = mean_uncert[1]
 
