@@ -84,11 +84,11 @@ class Trainer:
                 rewards.append(reward)
 
                 # Eval agent
-                if (i_ep + 1) % self._eval_interval == 0:
-                    eval_score = self.eval(i_step)
+                if (self._global_step + 1) % self._eval_interval == 0:
+                    eval_score = self.eval(self._global_step)
 
                     if eval_score > self._best_score and not self._debug:
-                        self._agent.save(i_ep, path=self.best_model_path)
+                        self._agent.save(self._global_step, path=self.best_model_path)
                         self._best_score = eval_score
 
                 # Save checkpoint
@@ -119,6 +119,10 @@ class Trainer:
 
             i_ep += 1
         
+        eval_score = self.eval(self._global_step)
+        if eval_score > self._best_score and not self._debug:
+            self._agent.save(self._global_step, path=self.best_model_path)
+            self._best_score = eval_score
         self._agent.save(i_ep, path=self.checkpoint_model_path)
 
     def eval(self, episode_nb, mode='eval'):
@@ -135,7 +139,7 @@ class Trainer:
         }
         mean_uncert = np.array([0, 0], dtype=np.float64)
 
-        for i_val in tqdm(range(self._nb_evaluations), f'{wandb_mode} ep {episode_nb}'):
+        for i_val in tqdm(range(self._nb_evaluations), f'{wandb_mode} step {episode_nb}'):
             score = 0
             steps = 0
             state = self._eval_env.reset()
