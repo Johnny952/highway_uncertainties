@@ -7,7 +7,7 @@ from highway_env.vehicle.controller import ControlledVehicle
 from highway_env.envs import HighwayEnv
 from .custom_behavior import CustomIDMVehicle
 
-DURATION = 40 # [s]
+DURATION = 160 # [s]
 POLICY_FREQUENCY = 8 # [1/s]
 
 class CustomHighwayEnv(HighwayEnv):
@@ -72,10 +72,10 @@ class CustomHighwayEnv(HighwayEnv):
             + self.config["right_lane_reward"] * lane / max(len(neighbours) - 1, 1) \
             + self.config["high_speed_reward"] * np.clip(scaled_speed, 0, 1) \
             + self.config["max_speed_reward"] * (scaled_speed > self.config["max_speed_threshold"])
-        reward = utils.lmap(reward,
-                          [self.config["collision_reward"],
-                           self.config["high_speed_reward"] + self.config["right_lane_reward"] + self.config["max_speed_reward"]],
-                          [0, 1])
+        # reward = utils.lmap(reward,
+        #                   [self.config["collision_reward"],
+        #                    self.config["high_speed_reward"] + self.config["right_lane_reward"] + self.config["max_speed_reward"]],
+        #                   [0, 1])
         reward = 0 if not self.vehicle.on_road else reward
         return reward
     

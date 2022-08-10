@@ -104,6 +104,7 @@ if __name__ == "__main__":
         action_repeat=config["action_repeat"],
         seed=config["seed"],
         version=1,
+        #path_render='render/test',
     )
     model1 = make_model(
         model='vae',
@@ -151,7 +152,6 @@ if __name__ == "__main__":
         model_name=run_name,
         checkpoint_every=10,
         debug=True,
-        render=False,
         save_obs=False,
         save_obs_test=True,
         dataset_path=config["dataset"],

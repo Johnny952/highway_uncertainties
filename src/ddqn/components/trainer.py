@@ -20,7 +20,6 @@ class Trainer:
         model_name: str="base",
         checkpoint_every: int=1000,
         debug: bool=False,
-        render: bool=False,
         save_obs: bool=False,
         save_obs_test: bool=False,
         dataset_path: str='dataset.hdf5',
@@ -35,7 +34,6 @@ class Trainer:
         self._model_name = model_name
         self._checkpoint_every = checkpoint_every
         self._debug = debug
-        self._render = render
 
         self.best_model_path = f"param/best_{model_name}.pkl"
         self.checkpoint_model_path = f"param/checkpoint_{model_name}.pkl"
@@ -108,6 +106,7 @@ class Trainer:
             metrics["Episode Std Speed"] = np.std(speeds)
             metrics["Episode Max Speed"] = np.max(speeds)
             metrics["Episode Min Speed"] = np.min(speeds)
+            metrics["Episode Max Speed Steps"] = len([s > 29.5 for s in speeds])
             metrics["Episode Running Score"] = running_score
             metrics["Max Episode Running Score"] = self._max_running_score
             metrics["Epsilon"] = self._agent.get_epsilon()
