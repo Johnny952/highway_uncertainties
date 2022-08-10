@@ -106,7 +106,7 @@ class Trainer:
             metrics["Episode Std Speed"] = np.std(speeds)
             metrics["Episode Max Speed"] = np.max(speeds)
             metrics["Episode Min Speed"] = np.min(speeds)
-            metrics["Episode Max Speed Steps"] = len([s > 29.5 for s in speeds])
+            metrics["Episode Max Speed Steps"] = sum([s > 29.5 for s in speeds])
             metrics["Episode Running Score"] = running_score
             metrics["Max Episode Running Score"] = self._max_running_score
             metrics["Epsilon"] = self._agent.get_epsilon()
