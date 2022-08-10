@@ -53,7 +53,7 @@ class Trainer:
         i_ep = 0
 
         while self._global_step  < self._nb_steps:
-            print(f"\rTraning episode: {i_ep}",end="")
+            print(f"\rTraining episode: {i_ep}\tTraning step: {self._global_step}",end="")
             metrics = {
                 "Train Episode": i_ep,
                 "Episode Running Score": float(running_score),
