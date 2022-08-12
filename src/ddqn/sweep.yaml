@@ -14,3 +14,11 @@ parameters:
     values: ["512", "1024", "256-256", "512-512", "256-512"]
   train-freq:
     values: [1, 2, 3]
+  steps:
+    value: 30000
+  buffer-capacity:
+    values: [15000, 30000]
+  batch-size:
+    value: 32
+  learning-rate:
+    value: 0.0005
