@@ -23,6 +23,8 @@ class Trainer:
         save_obs: bool=False,
         save_obs_test: bool=False,
         dataset_path: str='dataset.hdf5',
+        learning_start: int=0,
+        train_freq: int=1,
     ) -> None:
         self._logger = logger
         self._agent = agent
@@ -34,6 +36,8 @@ class Trainer:
         self._model_name = model_name
         self._checkpoint_every = checkpoint_every
         self._debug = debug
+        self._learning_start = learning_start
+        self._train_freq = train_freq
 
         self.best_model_path = f"param/best_{model_name}.pkl"
         self.checkpoint_model_path = f"param/checkpoint_{model_name}.pkl"
@@ -74,7 +78,7 @@ class Trainer:
                 next_state, reward, done, info = self._env.step(action)
                 if self._agent.store_transition(
                     state, action_idx, next_state, reward, done
-                ):
+                ) and self._global_step > self._learning_start and self._global_step % self._train_freq == 0:
                     self._agent.update()
                 metrics["Episode Score"] += reward
                 metrics["Episode Steps"] += 1

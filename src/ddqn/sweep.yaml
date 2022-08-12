@@ -1,0 +1,16 @@
+program: train.py
+project: highway-ddqn
+method: grid
+metric:
+  name: "Max Episode Running Score"
+  goal: maximize
+  target: 10000
+parameters:
+  gamma:
+    values: [0.99, 0.95]
+  state-stack:
+    value: [1, 2, 4]
+  architecture:
+    values: ["512", "1024", "256-256", "512-512", "256-512"]
+  train-freq:
+    values: [1, 2, 3]

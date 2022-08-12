@@ -60,13 +60,13 @@ if __name__ == "__main__":
         "-G", "--gamma", type=float, default=0.99, help="discount factor"
     )
     agent_config.add_argument(
-        "-SS", "--state-stack", type=int, default=6, help="Number of state stack as observation"
+        "-SS", "--state-stack", type=int, default=2, help="Number of state stack as observation"
     )
     agent_config.add_argument(
         "-A",
         "--architecture",
         type=str,
-        default="1024",
+        default="512-512",
         help='Base network architecture',
     )
 
@@ -104,14 +104,21 @@ if __name__ == "__main__":
         "-EMS",
         "--epsilon-max-steps",
         type=int,
-        default=400000,
+        default=2000,
         help="Max Epsilon Steps parameter, when epsilon is close to the minimum",
     )
 
     # Training Config
     train_config = parser.add_argument_group("Train config")
     train_config.add_argument(
-        "-S", "--steps", type=int, default=800000, help="Number of training steps"
+        "-S", "--steps", type=int, default=20000, help="Number of training steps"
+    )
+    train_config.add_argument(
+        "-TF",
+        "--train-freq",
+        type=int,
+        default=1,
+        help="Train frequency",
     )
     train_config.add_argument(
         "-D",
@@ -124,7 +131,7 @@ if __name__ == "__main__":
         "-EI",
         "--eval-interval",
         type=int,
-        default=8000,
+        default=200,
         help="Interval between evaluations",
     )
     train_config.add_argument(
@@ -150,13 +157,13 @@ if __name__ == "__main__":
     # Update
     update_config = parser.add_argument_group("Update config")
     update_config.add_argument(
-        "-BC", "--buffer-capacity", type=int, default=1000000, help="Buffer Capacity"
+        "-BC", "--buffer-capacity", type=int, default=15000, help="Buffer Capacity"
     )
     update_config.add_argument(
-        "-BS", "--batch-size", type=int, default=64, help="Batch Capacity"
+        "-BS", "--batch-size", type=int, default=32, help="Batch Capacity"
     )
     update_config.add_argument(
-        "-LR", "--learning-rate", type=float, default=0.001, help="Learning Rate"
+        "-LR", "--learning-rate", type=float, default=5e-4, help="Learning Rate"
     )
 
     args = parser.parse_args()
@@ -290,6 +297,8 @@ if __name__ == "__main__":
         checkpoint_every=500,
         debug=config["debug"],
         save_obs=config["model"] == "vae",
+        learning_start=200,
+        train_freq=config["train_freq"],
     )
 
     trainer.run()
