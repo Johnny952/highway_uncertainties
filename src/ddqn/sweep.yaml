@@ -9,7 +9,7 @@ parameters:
   gamma:
     values: [0.99, 0.95]
   state-stack:
-    value: [1, 2, 4]
+    values: [1, 2, 4]
   architecture:
     values: ["512", "1024", "256-256", "512-512", "256-512"]
   train-freq:
