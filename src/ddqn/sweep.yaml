@@ -11,11 +11,9 @@ parameters:
   state-stack:
     values: [1, 2, 4]
   architecture:
-    values: ["512", "1024", "256-256", "512-512", "256-512"]
+    values: ["256-256", "512-512", "256-512", "512", "1024"]
   train-freq:
     values: [1, 2, 3]
-  steps:
-    value: 30000
   buffer-capacity:
     values: [15000, 30000]
   batch-size:

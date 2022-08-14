@@ -14,12 +14,6 @@ import sys
 sys.path.append('..')
 from shared.utils.uncert_file import init_uncert_file
 from shared.envs.env import Env
-from shared.utils.replay_buffer import ReplayMemory
-from shared.components.logger import Logger
-from components.uncert_agents import make_agent
-from components.epsilon import Epsilon
-from components.trainer import Trainer
-from models import make_model
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -69,44 +63,6 @@ if __name__ == "__main__":
         type=str,
         default="512-512",
         help='Base network architecture',
-    )
-
-    # Epsilon Config
-    epsilon_config = parser.add_argument_group("Epsilon config")
-    epsilon_config.add_argument(
-        "-EM",
-        "--epsilon-method",
-        type=str,
-        default="linear",
-        help="Epsilon decay method: constant, linear, exp or inverse_sigmoid",
-    )
-    epsilon_config.add_argument(
-        "-EMa",
-        "--epsilon-max",
-        type=float,
-        default=1,
-        help="The minimum value of epsilon, used this value in constant",
-    )
-    epsilon_config.add_argument(
-        "-EMi",
-        "--epsilon-min",
-        type=float,
-        default=0.05,
-        help="The minimum value of epsilon",
-    )
-    epsilon_config.add_argument(
-        "-EF",
-        "--epsilon-factor",
-        type=float,
-        default=7,
-        help="Factor parameter of epsilon decay, only used when method is exp or inverse_sigmoid",
-    )
-    epsilon_config.add_argument(
-        "-EMS",
-        "--epsilon-max-steps",
-        type=int,
-        default=2000,
-        help="Max Epsilon Steps parameter, when epsilon is close to the minimum",
     )
 
     # Training Config
@@ -218,68 +174,33 @@ if __name__ == "__main__":
         device = args.device
     print(colored(f"Using: {device}", "green"))
 
-    # Init logger
-    logger = Logger("highway-ddqn", args.model, run_name, str(run_id), args=vars(args))
-    config = logger.get_config()
-
     # Init Agent and Environment
     print(colored("Initializing agent and environments", "blue"))
     env = Env(
-        state_stack=config["state_stack"],
-        action_repeat=config["action_repeat"],
-        seed=config["train_seed"],
+        state_stack=args.state_stack,
+        action_repeat=args.action_repeat,
+        seed=args.train_seed,
         version=1,
     )
     eval_env = Env(
-        state_stack=config["state_stack"],
-        action_repeat=config["action_repeat"],
-        seed=config["eval_seed"],
-        path_render=render_eval__model_path if config["eval_render"] else None,
-        evaluations=config["evaluations"],
+        state_stack=args.state_stack,
+        action_repeat=args.action_repeat,
+        seed=args.eval_seed,
+        path_render=render_eval__model_path if args.eval_render else None,
+        evaluations=args.evaluations,
         version=1,
     )
-    Transition = namedtuple(
-        "Transition", ("state", "action", "next_state", "reward", "done")
-    )
-    buffer = ReplayMemory(
-        config["buffer_capacity"],
-        config["batch_size"],
-        Transition,
-    )
-    epsilon = Epsilon(
-        max_steps=config["epsilon_max_steps"],
-        method=config["epsilon_method"],
-        epsilon_max=config["epsilon_max"],
-        epsilon_min=config["epsilon_min"],
-        factor=config["epsilon_factor"],
-    )
-    architecture = [int(l) for l in config["architecture"].split("-")]
-    model1 = make_model(
-        model=config["model"],
-        state_stack=config["state_stack"],
-        input_dim=env.observation_dims,
-        output_dim=len(env.actions),
-        architecture=architecture,
-    ).to(device)
-    model2 = make_model(
-        model=config["model"],
-        state_stack=config["state_stack"],
-        input_dim=env.observation_dims,
-        output_dim=len(env.actions),
-        architecture=architecture,
-    ).to(device)
-    agent = make_agent(
-        agent=config["model"],
-        model1=model1,
-        model2=model2,
-        gamma=config["gamma"],
-        buffer=buffer,
-        logger=logger,
-        actions=env.actions,
-        epsilon=epsilon,
-        device=device,
-        lr=config["learning_rate"],
-    )
+    agent = DQN('MlpPolicy', "highway-fast-v0",
+                policy_kwargs=dict(net_arch=[256, 256]),
+                learning_rate=5e-4,
+                buffer_size=15000,
+                learning_starts=200,
+                batch_size=32,
+                gamma=0.8,
+                train_freq=1,
+                gradient_steps=1,
+                target_update_interval=50,
+                exploration_fraction=0.7)
     print(colored("Agent and environments created successfully", "green"))
 
     steps = config["steps"]

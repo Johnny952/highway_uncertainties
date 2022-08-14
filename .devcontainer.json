@@ -1,0 +1,11 @@
+{
+    "dockerFile": "./.devcontainer/Dockerfile",
+    "name": "cuda-pytorch",
+    "extensions": [
+      "ms-python.python"
+    ],
+    "runArgs": [
+      "--gpus=all"
+    ],
+    "settings": {}
+  }
