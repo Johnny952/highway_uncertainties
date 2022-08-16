@@ -57,10 +57,10 @@ if __name__ == "__main__":
         help='Type of uncertainty model: "base", "sensitivity", "dropout", "bootstrap", "aleatoric", "bnn" or "custom"',
     )
     agent_config.add_argument(
-        "-G", "--gamma", type=float, default=0.99, help="discount factor"
+        "-G", "--gamma", type=float, default=0.8, help="discount factor"
     )
     agent_config.add_argument(
-        "-SS", "--state-stack", type=int, default=2, help="Number of state stack as observation"
+        "-SS", "--state-stack", type=int, default=4, help="Number of state stack as observation"
     )
     agent_config.add_argument(
         "-A",

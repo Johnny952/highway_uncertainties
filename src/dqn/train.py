@@ -5,15 +5,18 @@ import uuid
 import glob
 from termcolor import colored
 from pyvirtualdisplay import Display
-from collections import namedtuple
+from wandb.integration.sb3 import WandbCallback
 import warnings
+import gym
 from stable_baselines3 import DQN
+from gym.wrappers import RecordVideo
 
 import sys
 
 sys.path.append('..')
 from shared.utils.uncert_file import init_uncert_file
-from shared.envs.env import Env
+from shared.components.logger import Logger
+from shared.envs.env import RecorderWrapper
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -126,11 +129,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     run_id = uuid.uuid4()
-    run_name = f"{args.model}_{run_id}"
-    # run_name = args.model
+    # run_name = f"{args.model}_{run_id}"
+    run_name = args.model
     render_path = "render"
     render_eval_path = f"{render_path}/eval"
-    render_eval__model_path = f"{render_eval_path}/{run_name}"
+    render_eval_model_path = f"{render_eval_path}/{run_name}"
     param_path = "param"
     uncertainties_path = "uncertainties"
     uncertainties_eval_path = f"{uncertainties_path}/eval"
@@ -147,10 +150,10 @@ if __name__ == "__main__":
             os.makedirs(render_path)
         if not os.path.exists(render_eval_path):
             os.makedirs(render_eval_path)
-        if not os.path.exists(render_eval__model_path):
-            os.makedirs(render_eval__model_path)
+        if not os.path.exists(render_eval_model_path):
+            os.makedirs(render_eval_model_path)
         else:
-            files = glob.glob(f"{render_eval__model_path}/*")
+            files = glob.glob(f"{render_eval_model_path}/*")
             for f in files:
                 os.remove(f)
         if not os.path.exists(uncertainties_eval_path):
@@ -174,23 +177,28 @@ if __name__ == "__main__":
         device = args.device
     print(colored(f"Using: {device}", "green"))
 
+    # Init logger
+    logger = Logger("highway-dqn", args.model, run_name, str(run_id), args=vars(args))
+    config = logger.get_config()
+
     # Init Agent and Environment
     print(colored("Initializing agent and environments", "blue"))
-    env = Env(
-        state_stack=args.state_stack,
-        action_repeat=args.action_repeat,
-        seed=args.train_seed,
-        version=1,
+    env = RecorderWrapper(
+        gym.make('highway-v1'),
+        dataset_path='train_dataset.hdf5'
     )
-    eval_env = Env(
-        state_stack=args.state_stack,
-        action_repeat=args.action_repeat,
-        seed=args.eval_seed,
-        path_render=render_eval__model_path if args.eval_render else None,
-        evaluations=args.evaluations,
-        version=1,
+    env.seed(config["train_seed"])
+
+    eval_env = RecordVideo(
+        gym.make('highway-v1'),
+        video_folder=render_eval_model_path,
+        episode_trigger=lambda e: e % config["evaluations"] == config["evaluations"] // 2
     )
-    agent = DQN('MlpPolicy', "highway-fast-v0",
+    eval_env.seed(config["eval_seed"])
+
+    env.reset()
+    eval_env.reset()
+    agent = DQN('MlpPolicy', env,
                 policy_kwargs=dict(net_arch=[256, 256]),
                 learning_rate=5e-4,
                 buffer_size=15000,
@@ -200,30 +208,26 @@ if __name__ == "__main__":
                 train_freq=1,
                 gradient_steps=1,
                 target_update_interval=50,
-                exploration_fraction=0.7)
+                verbose=1,
+    )
     print(colored("Agent and environments created successfully", "green"))
 
-    steps = config["steps"]
-    for name, param in config.items():
-        print(colored(f"{name}: {param}", "cyan"))
+    agent.learn(total_timesteps=int(3e4), callback=WandbCallback())
+    agent.save("param/model")
+    del agent
 
-    trainer = Trainer(
-        agent=agent,
-        env=env,
-        eval_env=eval_env,
-        logger=logger,
-        steps=steps,
-        nb_evaluations=config["evaluations"],
-        eval_interval=config["eval_interval"],
-        model_name=run_name,
-        checkpoint_every=500,
-        debug=config["debug"],
-        save_obs=config["model"] == "vae",
-        learning_start=200,
-        train_freq=config["train_freq"],
-    )
+    model = DQN.load(f"{param_path}/model", env=eval_env)
 
-    trainer.run()
+    for videos in range(10):
+        done = False
+        obs = eval_env.reset()
+        while not done:
+            # Predict
+            action, _states = model.predict(obs, deterministic=True)
+            # Get reward
+            obs, reward, done, info = eval_env.step(action)
+            # Render
+            eval_env.render()
+
     env.close()
     eval_env.close()
-    logger.close()

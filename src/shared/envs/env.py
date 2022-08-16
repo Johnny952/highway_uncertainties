@@ -5,6 +5,13 @@ from gym.envs.registration import register
 from gym.wrappers.record_video import RecordVideo
 from collections import deque
 
+from shared.components.dataset import Dataset
+
+register(
+    id='highway-v1',
+    entry_point='shared.envs.custom_highway_env:CustomHighwayEnv',
+)
+
 class Env():
     """
     Environment wrapper for CarRacing 
@@ -12,11 +19,6 @@ class Env():
 
     def __init__(self, state_stack, action_repeat, seed=None, path_render=None, evaluations=1, version=1):
         gym.logger.set_level(200)
-
-        register(
-            id='highway-v1',
-            entry_point='shared.envs.custom_highway_env:CustomHighwayEnv',
-        )
 
         self.path_render = path_render
         self._render = path_render is not None
@@ -29,7 +31,7 @@ class Env():
         self.env.seed(seed)
         self.fps = 15
 
-        self.env.metadata["render_modes"] = self.env.metadata["render.modes"]
+        # self.env.metadata["render_modes"] = self.env.metadata["render.modes"]
         self.env.metadata["video.frames_per_second"] = self.fps
         self.env.metadata["render_fps"] = self.fps
 
@@ -76,3 +78,38 @@ class Env():
 
     def spawn_vehicle(self):
         self.env.env.env.spawn_vehicle()
+
+class ObservationStacker(gym.Wrapper):
+    def __init__(self, env: Env, new_step_api: bool = False, state_stack=1):
+        super().__init__(env, new_step_api)
+        self.state_stack = deque([], maxlen=state_stack)
+    
+    def reset(self, **kwargs):
+        state = super().reset(**kwargs)
+        for _ in range(self.state_stack.maxlen):
+            self.state_stack.append(state)
+        return np.array(self.state_stack)
+    
+    def step(self, action):
+        next_state, reward, done, info = super().step(action)
+        self.state_stack.append(next_state)
+        return np.array(self.state_stack), reward, done, info
+
+class RecorderWrapper(gym.Wrapper):
+    def __init__(self, env: Env, new_step_api: bool = False, dataset_path: str='dataset.hdf5',):
+        super().__init__(env, new_step_api)
+        self._dataset = Dataset(dataset_path, overwrite=True)
+
+        self._step = 0
+        self._episode = 0
+    
+    def step(self, action):
+        next_state, reward, done, info = super().step(action)
+        self._dataset.push(next_state, self._step, self._episode)
+        self._step += 1
+        return next_state, reward, done, info
+
+    def reset(self, **kwargs):
+        self._episode += 1
+        self._step = 0
+        return super().reset(**kwargs)
