@@ -16,7 +16,7 @@ import sys
 sys.path.append('..')
 from shared.utils.uncert_file import init_uncert_file
 from shared.components.logger import Logger
-from shared.envs.env import RecorderWrapper
+from shared.envs.env import RecorderWrapper, load_env
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -183,6 +183,7 @@ if __name__ == "__main__":
 
     # Init Agent and Environment
     print(colored("Initializing agent and environments", "blue"))
+    load_env()
     env = RecorderWrapper(
         gym.make('highway-v1'),
         dataset_path='train_dataset.hdf5'

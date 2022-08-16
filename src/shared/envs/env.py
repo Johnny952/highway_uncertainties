@@ -7,10 +7,11 @@ from collections import deque
 
 from shared.components.dataset import Dataset
 
-register(
-    id='highway-v1',
-    entry_point='shared.envs.custom_highway_env:CustomHighwayEnv',
-)
+def load_env():
+    register(
+        id='highway-v1',
+        entry_point='shared.envs.custom_highway_env:CustomHighwayEnv',
+    )
 
 class Env():
     """

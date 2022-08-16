@@ -12,7 +12,7 @@ import sys
 
 sys.path.append('..')
 from shared.utils.uncert_file import init_uncert_file
-from shared.envs.env import Env
+from shared.envs.env import Env, load_env
 from shared.utils.replay_buffer import ReplayMemory
 from shared.components.logger import Logger
 from components.uncert_agents import make_agent
@@ -223,6 +223,7 @@ if __name__ == "__main__":
 
     # Init Agent and Environment
     print(colored("Initializing agent and environments", "blue"))
+    load_env()
     env = Env(
         state_stack=config["state_stack"],
         action_repeat=config["action_repeat"],
