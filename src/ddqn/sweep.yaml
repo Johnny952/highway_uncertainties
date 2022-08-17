@@ -6,17 +6,9 @@ metric:
   goal: maximize
   target: 10000
 parameters:
-  gamma:
-    values: [0.99, 0.95]
-  state-stack:
-    values: [1, 2, 4]
+  epsilon-max-steps:
+    values: [10000, 15000, 20000, 25000, 30000]
   architecture:
-    values: ["256-256", "512-512", "256-512", "512", "1024"]
-  train-freq:
-    values: [1, 2, 3]
-  buffer-capacity:
-    values: [15000, 30000]
-  batch-size:
-    value: 32
-  learning-rate:
-    value: 0.0005
+    values: ["2048", "512-512", "256-256", "512-256-128"]
+  gamma:
+    values: [0.7, 0.8, 0.9]

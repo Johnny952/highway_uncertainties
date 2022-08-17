@@ -178,7 +178,16 @@ if __name__ == "__main__":
     print(colored(f"Using: {device}", "green"))
 
     # Init logger
-    logger = Logger("highway-dqn", args.model, run_name, str(run_id), args=vars(args))
+    logger = Logger(
+        "highway-dqn",
+        args.model,
+        run_name,
+        str(run_id),
+        args=vars(args),
+        sync_tensorboard=True,
+        # monitor_gym=True,
+        save_code=True,
+    )
     config = logger.get_config()
 
     # Init Agent and Environment
@@ -193,16 +202,18 @@ if __name__ == "__main__":
     eval_env = RecordVideo(
         gym.make('highway-v1'),
         video_folder=render_eval_model_path,
-        episode_trigger=lambda e: e % config["evaluations"] == config["evaluations"] // 2
+        # episode_trigger=lambda e: e % config["evaluations"] == config["evaluations"] // 2
     )
     eval_env.seed(config["eval_seed"])
+    eval_env.configure({"simulation_frequency": 15}) 
+    eval_env.unwrapped.set_record_video_wrapper(eval_env)
 
     env.reset()
     eval_env.reset()
     agent = DQN('MlpPolicy', env,
                 policy_kwargs=dict(net_arch=[256, 256]),
                 learning_rate=5e-4,
-                buffer_size=15000,
+                buffer_size=30000,
                 learning_starts=200,
                 batch_size=32,
                 gamma=0.8,
@@ -210,10 +221,11 @@ if __name__ == "__main__":
                 gradient_steps=1,
                 target_update_interval=50,
                 verbose=1,
+                tensorboard_log=f"runs/{run_id}"
     )
     print(colored("Agent and environments created successfully", "green"))
 
-    agent.learn(total_timesteps=int(3e4), callback=WandbCallback())
+    agent.learn(total_timesteps=int(4e4), callback=WandbCallback())
     agent.save("param/model")
     del agent
 
@@ -228,7 +240,8 @@ if __name__ == "__main__":
             # Get reward
             obs, reward, done, info = eval_env.step(action)
             # Render
-            eval_env.render()
+            # eval_env.render()
 
     env.close()
     eval_env.close()
+    logger.close()
