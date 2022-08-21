@@ -17,20 +17,32 @@ class Dataset(data.Dataset):
         self._keys = []
         self._episodes = {}
         self._read_keys()
+        self.obs_key = 'observation'
+        self.act_key = 'action'
 
-    def push(self, observation, episode, timestamp):
+    def push(self, observation, action, episode, timestamp):
         ep_name = str(episode)
         time_name = str(timestamp)
-        self._push(observation, ep_name, time_name)
+        self._push(observation, action, ep_name, time_name)
 
-    def _push(self, observation, episode, timestamp):
+    def _push(self, observation, action, episode, timestamp):
         with h5py.File(self._file_path, 'a') as h5_file:
             if not episode in h5_file.keys():
-                h5_file.create_group(episode)
-            if not timestamp in h5_file[episode].keys():
-                h5_file[episode].create_dataset(timestamp, data=observation)
+                ep = h5_file.create_group(episode)
             else:
-                h5_file[episode][timestamp] = observation
+                ep = h5_file[episode]
+            if not timestamp in h5_file[episode].keys():
+                t = ep.create_group(timestamp)
+            else:
+                t = ep[timestamp]
+            if not self.obs_key in t.keys():
+                t.create_dataset(self.obs_key, data=observation)
+            else:
+                t[self.obs_key] = observation
+            if not self.act_key in t.keys():
+                t.create_dataset(self.act_key, data=action)
+            else:
+                t[self.act_key] = action
 
     def _read_keys(self):
         with h5py.File(self._file_path, 'r') as h5_file:
@@ -52,9 +64,11 @@ class Dataset(data.Dataset):
         pointer = self._keys[i]
         episode, timestamp = pointer["episode"], pointer["timestamp"]
         with h5py.File(self._file_path, 'r') as f:
-            d = f[episode][timestamp][()]
-        return d
+            obs = f[episode][timestamp][self.obs_key][()]
+            act = f[episode][timestamp][self.act_key][()]
+        return obs, act
 
 if __name__ == "__main__":
-    dataset = Dataset('../../ddqn/dataset.hdf5')
-    print(dataset[-1])
+    dataset = Dataset('../../ddqn/dataset_update.hdf5')
+    print(len(dataset))
+    #print(dataset[0][0])

@@ -22,7 +22,7 @@ class Trainer:
         debug: bool=False,
         save_obs: bool=False,
         save_obs_test: bool=False,
-        dataset_path: str='dataset.hdf5',
+        dataset_path: str='dataset_train.hdf5',
         learning_start: int=0,
         train_freq: int=1,
     ) -> None:
@@ -72,9 +72,9 @@ class Trainer:
             i_step = 0
 
             while not done:
-                if self._save_obs:
-                    self._dataset.push(state, i_ep, i_step)
                 action, action_idx = self._agent.select_action(state)[:2]
+                if self._save_obs:
+                    self._dataset.push(state, action, i_ep, i_step)
                 next_state, reward, done, info = self._env.step(action)
                 if self._agent.store_transition(
                     state, action_idx, next_state, reward, done
@@ -151,10 +151,10 @@ class Trainer:
 
             uncert = []
             while not die:
+                action, _, (epis, aleat) = self._agent.select_action(state, eval=True)
                 if self._save_obs_test:
                     evaluation = self._eval_nb * self._nb_evaluations + i_val
-                    self._dataset.push(state, evaluation, steps)
-                action, _, (epis, aleat) = self._agent.select_action(state, eval=True)
+                    self._dataset.push(state, action, evaluation, steps)
                 uncert.append(
                     [epis.view(-1).cpu().numpy()[0], aleat.view(-1).cpu().numpy()[0]]
                 )

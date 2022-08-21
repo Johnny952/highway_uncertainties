@@ -6,6 +6,7 @@ from torch.utils import data
 from .base_agent import BaseAgent
 from shared.models.vae import VAE
 from shared.components.logger import Logger
+from shared.components.dataset import Dataset
 
 
 class VAEAgent(BaseAgent):
@@ -14,6 +15,8 @@ class VAEAgent(BaseAgent):
                  **kwargs,
                  ):
         super().__init__(*args, **kwargs)
+
+        self._dataset = Dataset('dataset_update.hdf5', overwrite=True)
 
         self._vae = VAE(
             state_stack=self._model1.state_stack,
@@ -41,6 +44,21 @@ class VAEAgent(BaseAgent):
         self._vae2_lr = 1e-3
         self._vae2_optimizer = optim.Adam(
             self._vae2.parameters(), lr=self._vae2_lr)
+
+    def sample_buffer(self):
+        dataset = self._buffer.sample()
+
+        for idx, (state, action) in enumerate(zip(dataset.state, dataset.action)):
+            self._dataset.push(state.squeeze().numpy(), action.squeeze().numpy(), self._nb_update, idx)
+
+        states = torch.cat(dataset.state).float().to(self._device)
+        action_idx = torch.cat(dataset.action).type(
+            torch.int64).to(self._device)
+        next_states = torch.cat(dataset.next_state).float().to(self._device)
+        rewards = torch.cat(dataset.reward).to(self._device)
+        dones = torch.cat(dataset.done).to(self._device)
+
+        return states, action_idx, next_states, rewards, dones
 
     def get_uncert(self, state: torch.Tensor):
         index = super().get_uncert(state)[0]

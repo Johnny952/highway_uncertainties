@@ -54,10 +54,10 @@ if __name__ == "__main__":
         "--model",
         type=str,
         default="base",
-        help='Type of uncertainty model: "base", "sensitivity", "dropout", "bootstrap", "aleatoric", "bnn" or "custom"',
+        help='Type of uncertainty model: "base", "vae"',
     )
     agent_config.add_argument(
-        "-G", "--gamma", type=float, default=0.8, help="discount factor"
+        "-G", "--gamma", type=float, default=0.7, help="discount factor"
     )
     agent_config.add_argument(
         "-SS", "--state-stack", type=int, default=4, help="Number of state stack as observation"
@@ -104,14 +104,14 @@ if __name__ == "__main__":
         "-EMS",
         "--epsilon-max-steps",
         type=int,
-        default=20000,
+        default=15000,
         help="Max Epsilon Steps parameter, when epsilon is close to the minimum",
     )
 
     # Training Config
     train_config = parser.add_argument_group("Train config")
     train_config.add_argument(
-        "-S", "--steps", type=int, default=40000, help="Number of training steps"
+        "-S", "--steps", type=int, default=120000, help="Number of training steps"
     )
     train_config.add_argument(
         "-TF",
@@ -131,7 +131,7 @@ if __name__ == "__main__":
         "-EI",
         "--eval-interval",
         type=int,
-        default=300,
+        default=1200,
         help="Interval between evaluations",
     )
     train_config.add_argument(
@@ -157,7 +157,7 @@ if __name__ == "__main__":
     # Update
     update_config = parser.add_argument_group("Update config")
     update_config.add_argument(
-        "-BC", "--buffer-capacity", type=int, default=15000, help="Buffer Capacity"
+        "-BC", "--buffer-capacity", type=int, default=30000, help="Buffer Capacity"
     )
     update_config.add_argument(
         "-BS", "--batch-size", type=int, default=32, help="Batch Capacity"
