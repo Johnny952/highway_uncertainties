@@ -2,6 +2,7 @@ import h5py
 from torch.utils import data
 from pathlib import Path
 from tqdm import tqdm
+import numpy as np
 
 class Dataset(data.Dataset):
     def __init__(self, file_path: str, overwrite=False) -> None:
@@ -66,7 +67,7 @@ class Dataset(data.Dataset):
         with h5py.File(self._file_path, 'r') as f:
             obs = f[episode][timestamp][self.obs_key][()]
             act = f[episode][timestamp][self.act_key][()]
-        return obs, act
+        return obs, np.array([act], dtype=np.float32)
 
 if __name__ == "__main__":
     dataset = Dataset('../../ddqn/dataset_update.hdf5')

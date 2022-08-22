@@ -11,39 +11,44 @@ from shared.components.dataset import Dataset
 
 class VAEAgent(BaseAgent):
     def __init__(self,
-                 *args,
-                 **kwargs,
-                 ):
+                vae1=None,
+                vae1_optimizer=None,
+                save_obs: bool=True,
+                vae2=None,
+                vae2_optimizer=None,
+                *args,
+                **kwargs,
+                ):
         super().__init__(*args, **kwargs)
 
-        self._dataset = Dataset('dataset_update.hdf5', overwrite=True)
+        self._dataset = Dataset('dataset_update.hdf5', overwrite=save_obs)
 
-        self._vae = VAE(
-            state_stack=self._model1.state_stack,
-            input_dim=self._model1.input_dim,
-            encoder_arc=[256, 128, 64],
-            decoder_arc=[64, 128, 256],
-            latent_dim=32,
-        )
+        if (vae1 and vae1_optimizer) and (vae2 and vae2_optimizer):
+            self.load_vae(vae1, vae1_optimizer)
+            self.load_vae2(vae2, vae2_optimizer)
+
+        elif vae2 and vae2_optimizer:
+            self.load_vae(vae2, vae2_optimizer)
+            self.load_vae2(vae2, vae2_optimizer)
+
+        elif vae1 and vae1_optimizer:
+            self.load_vae(vae1, vae1_optimizer)
+            self.load_vae2(vae1, vae1_optimizer)
+        
+        else:
+            raise NotImplementedError('At least one vae and one optimizer must be provided')
+
+    def load_vae(self, vae, vae_optimizer):
+        self._vae = vae
         self._vae.to(self._device)
         self._vae.eval()
-        self._vae_lr = 1e-3
-        self._vae_optimizer = optim.Adam(
-            self._vae.parameters(), lr=self._vae_lr)
+        self._vae_optimizer = vae_optimizer
 
-
-        self._vae2 = VAE(
-            state_stack=self._model1.state_stack,
-            input_dim=self._model1.input_dim,
-            encoder_arc=[256, 128, 64],
-            decoder_arc=[64, 128, 256],
-            latent_dim=32,
-        )
+    def load_vae2(self, vae, vae_optimizer):
+        self._vae2 = vae
+        self._vae_optimizer = vae_optimizer
         self._vae2.to(self._device)
         self._vae2.eval()
-        self._vae2_lr = 1e-3
-        self._vae2_optimizer = optim.Adam(
-            self._vae2.parameters(), lr=self._vae2_lr)
 
     def sample_buffer(self):
         dataset = self._buffer.sample()
@@ -115,16 +120,16 @@ class VAEAgent(BaseAgent):
                 'Running Reconst': 0.0,
                 'Running KLD': 0.0,
             }
-            for i, batch in tqdm(enumerate(train_loader, 0), 'Training Batch'):
+            for i, (obs, act) in tqdm(enumerate(train_loader, 0), 'Training Batch'):
                 if mode == 'E':
                     self._vae_optimizer.zero_grad()
-                    outputs = self._vae(batch.to(self._device))
+                    outputs = self._vae(obs.to(self._device), act.to(self._device))
                     loss = self._vae.loss_function(*outputs, M_N=kld_weight)
                     loss['loss'].backward()
                     self._vae_optimizer.step()
                 else:
                     self._vae2_optimizer.zero_grad()
-                    outputs = self._vae2(batch.to(self._device))
+                    outputs = self._vae2(obs.to(self._device), act.to(self._device))
                     loss = self._vae2.loss_function(*outputs, M_N=kld_weight)
                     loss['loss'].backward()
                     self._vae2_optimizer.step()
@@ -158,13 +163,13 @@ class VAEAgent(BaseAgent):
             'Eval Reconst': 0.0,
             'Eval KLD': 0.0,
         }
-        for i, batch in tqdm(enumerate(loader, 0), 'Eval Batch'):
+        for i, (obs, act) in tqdm(enumerate(loader, 0), 'Eval Batch'):
             with torch.no_grad():
                 if mode == 'E':
-                    outputs = self._vae(batch.to(self._device))
+                    outputs = self._vae(obs.to(self._device), act.to(self._device))
                     loss = self._vae.loss_function(*outputs, M_N=kld_weight)
                 else:
-                    outputs = self._vae2(batch.to(self._device))
+                    outputs = self._vae2(obs.to(self._device), act.to(self._device))
                     loss = self._vae2.loss_function(*outputs, M_N=kld_weight)
                 metrics['Eval Loss'] += loss['loss'].item()
                 metrics['Eval Loss'] += loss['Reconstruction_Loss']

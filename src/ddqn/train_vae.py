@@ -14,7 +14,7 @@ from components.uncert_agents import make_agent
 from shared.components.dataset import Dataset
 from shared.components.logger import Logger
 from shared.models.vae import VAE
-from shared.envs.env import Env
+from shared.envs.env import Env, load_env
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -28,7 +28,7 @@ if __name__ == "__main__":
         "-DT",
         "--dataset",
         type=str,
-        default="./dataset.hdf5",
+        default="./dataset_train.hdf5",
         help='Path to dataset',
     )
     train_config.add_argument(
@@ -37,12 +37,6 @@ if __name__ == "__main__":
         type=str,
         default="./param/best_vae.pkl",
         help='Path to model',
-    )
-    train_config.add_argument(
-        "--mode",
-        type=str,
-        default='E',
-        help='VAE model mode, aleatoric "A" or epistemic "E"',
     )
     train_config.add_argument(
         "-BS",
@@ -90,10 +84,22 @@ if __name__ == "__main__":
     # VAE Config
     vae_config = parser.add_argument_group("VAE config")
     vae_config.add_argument(
-        "-EA", "--encoder-arc", type=str, default='256,128,64', help="VAE Encoder architecture comma separated"
+        "-SEA", "--shared-encoder-arc", type=str, default='256-128-64', help="VAE Encoder architecture comma separated"
     )
     vae_config.add_argument(
-        "-DA", "--decoder-arc", type=str, default='64,128,256', help="VAE Decoder architecture comma separated"
+        "-OEA", "--obs-encoder-arc", type=str, default='64-16', help="VAE Encoder architecture comma separated"
+    )
+    vae_config.add_argument(
+        "-AEA", "--act-encoder-arc", type=str, default='16', help="VAE Encoder architecture comma separated"
+    )
+    vae_config.add_argument(
+        "-SDA", "--shared-decoder-arc", type=str, default='64-128-256', help="VAE Decoder architecture comma separated"
+    )
+    vae_config.add_argument(
+        "-ODA", "--obs-decoder-arc", type=str, default='16-64', help="VAE Decoder architecture comma separated"
+    )
+    vae_config.add_argument(
+        "-ADA", "--act-decoder-arc", type=str, default='16', help="VAE Decoder architecture comma separated"
     )
     vae_config.add_argument(
         "-LD", "--latent-dim", type=int, default=32, help="VAE latent dimensions"
@@ -102,7 +108,7 @@ if __name__ == "__main__":
         "-B", "--beta", type=float, default=4, help="VAE KLD scale when loss type equal 'H'"
     )
     vae_config.add_argument(
-        "-G", "--gamma", type=float, default=100, help="VAE KLD scale when loss type equal 'B'"
+        "-G", "--gamma", type=float, default=1, help="VAE KLD scale when loss type equal 'B'"
     )
     vae_config.add_argument(
         "-MC", "--max-capacity", type=float, default=25, help="Max capacity"
@@ -117,13 +123,13 @@ if __name__ == "__main__":
     # Agent Config
     agent_config = parser.add_argument_group("Agent config")
     agent_config.add_argument(
-        "-SS", "--state-stack", type=int, default=6, help="Number of state stack as observation"
+        "-SS", "--state-stack", type=int, default=4, help="Number of state stack as observation"
     )
     agent_config.add_argument(
         "-A",
         "--architecture",
         type=str,
-        default="1024",
+        default="512-512",
         help='Base network architecture',
     )
 
@@ -145,19 +151,57 @@ if __name__ == "__main__":
     print(colored(f"Using: {device}", "green"))
 
     # Init logger
-    logger = Logger("highway-ddqn", args.model, run_name,
+    logger = Logger("highway-ddqn", 'vae-E', run_name,
                     str(run_id), args=vars(args))
     config = logger.get_config()
 
     # Init Agent and Environment
     print(colored("Initializing agent", "blue"))
     architecture = [int(l) for l in config["architecture"].split("-")]
+    load_env()
     env = Env(
         state_stack=config["state_stack"],
         action_repeat=1,
         seed=0,
         version=1,
     )
+
+    dataset = Dataset(config["dataset"], overwrite=False)
+    train_length = int(len(dataset) * config["train_test_prop"])
+    train_set, val_set = data.random_split(
+        dataset, [train_length, len(dataset) - train_length])
+    train_loader = data.DataLoader(
+        train_set, batch_size=config["batch_size"], shuffle=True)
+    val_loader = data.DataLoader(
+        val_set, batch_size=config["batch_size"], shuffle=True)
+
+    Capacity_max_iter = len(train_loader) * config["epochs"]
+    
+    obs_encoder_arc = [int(l) for l in config["obs_encoder_arc"].split("-")]
+    act_encoder_arc = [int(l) for l in config["act_encoder_arc"].split("-")]
+    shared_encoder_arc = [int(l) for l in config["shared_encoder_arc"].split("-")]
+    obs_decoder_arc = [int(l) for l in config["obs_decoder_arc"].split("-")]
+    act_decoder_arc = [int(l) for l in config["act_decoder_arc"].split("-")]
+    shared_decoder_arc = [int(l) for l in config["shared_decoder_arc"].split("-")]
+    vae = VAE(
+        state_stack=config["state_stack"],
+        obs_dim=env.observation_dims,
+        act_dim=1,
+        obs_encoder_arc=obs_encoder_arc,
+        act_encoder_arc=act_encoder_arc,
+        shared_encoder_arc=shared_encoder_arc,
+        obs_decoder_arc=obs_decoder_arc,
+        act_decoder_arc=act_decoder_arc,
+        shared_decoder_arc=shared_decoder_arc,
+        latent_dim=config["latent_dim"],
+        beta=config["beta"],
+        gamma=config["gamma"],
+        max_capacity=config["max_capacity"],
+        Capacity_max_iter=Capacity_max_iter,
+        loss_type=config["loss_type"],
+    ).to(torch.float)
+    optimizer = optim.Adam(vae.parameters(), lr=config["learning_rate"])
+
     model1 = make_model(
         model='vae',
         state_stack=config["state_stack"],
@@ -172,6 +216,9 @@ if __name__ == "__main__":
         output_dim=len(env.actions),
         architecture=architecture,
     ).to(device)
+    checkpoint = torch.load(config["model"])
+    model1.load_state_dict(checkpoint["model1_state_dict"])
+    model2.load_state_dict(checkpoint["model2_state_dict"])
     agent = make_agent(
         agent='vae',
         model1=model1,
@@ -183,56 +230,21 @@ if __name__ == "__main__":
         epsilon=None,
         device=device,
         lr=0,
+        save_obs=False,
+        vae1=vae,
+        vae1_optimizer=optimizer,
     )
 
-    # agent.load(config["model"])
     model1.eval()
     model2.eval()
-    agent._vae.train()
     env.close()
     print(colored("Agent and environments created successfully", "green"))
 
     for name, param in config.items():
         print(colored(f"{name}: {param}", "cyan"))
 
-    dataset = Dataset(config["dataset"], overwrite=False)
-    train_length = int(len(dataset) * config["train_test_prop"])
-    train_set, val_set = data.random_split(
-        dataset, [train_length, len(dataset) - train_length])
-    train_loader = data.DataLoader(
-        train_set, batch_size=config["batch_size"], shuffle=True)
-    val_loader = data.DataLoader(
-        val_set, batch_size=config["batch_size"], shuffle=True)
-
-    Capacity_max_iter = len(train_loader) * config["epochs"]
-    vae = VAE(
-        state_stack=config["state_stack"],
-        input_dim=env.observation_dims,
-        encoder_arc=config["encoder_arc"],
-        encoder_arc=config["decoder_arc"],
-        latent_dim=config["latent_dim"],
-        beta=config["beta"],
-        gamma=config["gamma"],
-        max_capacity=config["max_capacity"],
-        Capacity_max_iter=Capacity_max_iter,
-        loss_type=config["loss_type"],
-    )
-    vae.to(device)
-    optimizer = optim.Adam(
-            vae.parameters(), lr=config["learning_rate"])
-    if config["mode"] == "E":
-        agent._vae_lr = config["learning_rate"]
-        agent._vae = vae
-        agent._vae_optimizer = optimizer
-    elif config["mode"] == "A":
-        agent._vae2_lr = config["learning_rate"]
-        agent._vae2 = vae
-        agent._vae2_optimizer = optimizer
-    else:
-        raise NotImplementedError('Mode not implemented')
-
     agent.update_vae(
-        config["mode"],
+        'E',
         train_loader,
         val_loader,
         logger,
@@ -241,6 +253,6 @@ if __name__ == "__main__":
         eval_every=10000,
     )
 
-    # agent.save(0, 'param/best_vae_trained')
+    agent.save(0, 'param/best_vae_trained')
 
     logger.close()
