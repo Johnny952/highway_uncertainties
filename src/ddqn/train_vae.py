@@ -5,6 +5,7 @@ import torch.optim as optim
 import uuid
 from termcolor import colored
 import warnings
+import json
 
 import sys
 
@@ -17,6 +18,16 @@ from shared.models.vae import VAE
 from shared.envs.env import Env, load_env
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
+
+def save_options(dictionary, path='param/vae.json'):
+    with open(path, 'w') as f:
+        json.dump(dictionary, f)
+
+def load_options(path='param/vae.json'):
+    with open(path) as json_file:
+        data = json.load(json_file)
+    return data
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -39,6 +50,14 @@ if __name__ == "__main__":
         help='Path to model',
     )
     train_config.add_argument(
+        "-MO",
+        "--mode",
+        type=str,
+        default="E",
+        help='VAE mode, whether it is for epistemic uncertainty "E" or aleatoric uncertainty "A"',
+        choices=["E", "A"]
+    )
+    train_config.add_argument(
         "-BS",
         "--batch-size",
         type=int,
@@ -56,7 +75,7 @@ if __name__ == "__main__":
         "-E",
         "--epochs",
         type=int,
-        default=20,
+        default=40,
         help='Training epochs',
     )
     train_config.add_argument(
@@ -151,7 +170,7 @@ if __name__ == "__main__":
     print(colored(f"Using: {device}", "green"))
 
     # Init logger
-    logger = Logger("highway-ddqn", 'vae-E', run_name,
+    logger = Logger("highway-ddqn", f'vae-{args.mode}', run_name,
                     str(run_id), args=vars(args))
     config = logger.get_config()
 
@@ -199,6 +218,7 @@ if __name__ == "__main__":
         max_capacity=config["max_capacity"],
         Capacity_max_iter=Capacity_max_iter,
         loss_type=config["loss_type"],
+        act_loss_weight=1,
     ).to(torch.float)
     optimizer = optim.Adam(vae.parameters(), lr=config["learning_rate"])
 
@@ -219,21 +239,61 @@ if __name__ == "__main__":
     checkpoint = torch.load(config["model"])
     model1.load_state_dict(checkpoint["model1_state_dict"])
     model2.load_state_dict(checkpoint["model2_state_dict"])
-    agent = make_agent(
-        agent='vae',
-        model1=model1,
-        model2=model2,
-        gamma=0,
-        buffer=None,
-        logger=logger,
-        actions=env.actions,
-        epsilon=None,
-        device=device,
-        lr=0,
-        save_obs=False,
-        vae1=vae,
-        vae1_optimizer=optimizer,
-    )
+    if args.mode == "E":
+        agent = make_agent(
+            agent='vae',
+            model1=model1,
+            model2=model2,
+            gamma=0,
+            buffer=None,
+            logger=logger,
+            actions=env.actions,
+            epsilon=None,
+            device=device,
+            lr=0,
+            save_obs=False,
+            vae1=vae,
+            vae1_optimizer=optimizer,
+        )
+    elif args.mode == "A":
+        options = load_options(path='param/vae-E.json')
+        vae2 = VAE(
+            state_stack=options["state_stack"],
+            obs_dim=options["obs_dim"],
+            act_dim=options["act_dim"],
+            obs_encoder_arc=options["obs_encoder_arc"],
+            act_encoder_arc=options["act_encoder_arc"],
+            shared_encoder_arc=options["shared_encoder_arc"],
+            obs_decoder_arc=options["obs_decoder_arc"],
+            act_decoder_arc=options["act_decoder_arc"],
+            shared_decoder_arc=options["shared_decoder_arc"],
+            latent_dim=options["latent_dim"],
+            beta=options["beta"],
+            gamma=options["gamma"],
+            max_capacity=options["max_capacity"],
+            Capacity_max_iter=options["Capacity_max_iter"],
+            loss_type=options["loss_type"],
+            act_loss_weight=options["act_loss_weight"],
+        ).to(torch.float)
+        optimizer2 = optim.Adam(vae2.parameters(), lr=config["learning_rate"])
+        vae2.eval()
+        agent = make_agent(
+            agent='vae',
+            model1=model1,
+            model2=model2,
+            gamma=0,
+            buffer=None,
+            logger=logger,
+            actions=env.actions,
+            epsilon=None,
+            device=device,
+            lr=0,
+            save_obs=False,
+            vae1=vae2,
+            vae1_optimizer=optimizer2,
+            vae2=vae,
+            vae2_optimizer=optimizer,
+        )
 
     model1.eval()
     model2.eval()
@@ -244,7 +304,7 @@ if __name__ == "__main__":
         print(colored(f"{name}: {param}", "cyan"))
 
     agent.update_vae(
-        'E',
+        args.mode,
         train_loader,
         val_loader,
         logger,
@@ -254,5 +314,23 @@ if __name__ == "__main__":
     )
 
     agent.save(0, 'param/best_vae_trained')
+    save_options({
+        "state_stack": config["state_stack"],
+        "obs_dim": env.observation_dims,
+        "act_dim": 1,
+        "obs_encoder_arc": obs_encoder_arc,
+        "act_encoder_arc": act_encoder_arc,
+        "shared_encoder_arc": shared_encoder_arc,
+        "obs_decoder_arc": obs_decoder_arc,
+        "act_decoder_arc": act_decoder_arc,
+        "shared_decoder_arc": shared_decoder_arc,
+        "latent_dim": config["latent_dim"],
+        "beta": config["beta"],
+        "gamma": config["gamma"],
+        "max_capacity": config["max_capacity"],
+        "Capacity_max_iter": Capacity_max_iter,
+        "loss_type": config["loss_type"],
+        "act_loss_weight": 1,
+    }, path=f'param/vae-{args.mode}.json')
 
     logger.close()

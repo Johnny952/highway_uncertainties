@@ -1,0 +1,18 @@
+program: train.py
+project: highway-ddqn
+method: grid
+metric:
+  name: "Running Loss"
+  goal: minimize
+  target: 10000
+parameters:
+  batch-size:
+    values: [64, 128, 256, 512]
+  learning-rate:
+    values: [0.001, 0.0001, 0.00001]
+  max-capacity:
+    values: [10, 20, 40, 80, 160]
+  gamma:
+    values: [1, 10, 100, 1000]
+  latent-dim:
+    valies: [8, 16, 32, 64, 128]
