@@ -51,7 +51,7 @@ if __name__ == "__main__":
     train_config.add_argument(
         "-S",
         "--seed",
-        type=float,
+        type=int,
         default=1,
         help='Pytorch seed',
     )
