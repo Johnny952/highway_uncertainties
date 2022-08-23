@@ -52,7 +52,7 @@ if __name__ == "__main__":
         "-S",
         "--seed",
         type=int,
-        default=1,
+        default=2,
         help='Pytorch seed',
     )
 
@@ -122,7 +122,7 @@ if __name__ == "__main__":
         architecture=architecture,
     ).to(device)
     agent = make_agent(
-        agent='vae',
+        agent='base',
         model1=model1,
         model2=model2,
         gamma=0,
