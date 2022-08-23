@@ -170,7 +170,7 @@ if __name__ == "__main__":
     print(colored(f"Using: {device}", "green"))
 
     # Init logger
-    logger = Logger("highway-ddqn", f'vae-{args.mode}', run_name,
+    logger = Logger("highway-ddqn-vae", f'vae-{args.mode}', run_name,
                     str(run_id), args=vars(args))
     config = logger.get_config()
 
