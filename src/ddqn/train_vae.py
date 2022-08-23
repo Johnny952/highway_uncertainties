@@ -75,7 +75,7 @@ if __name__ == "__main__":
         "-E",
         "--epochs",
         type=int,
-        default=40,
+        default=20,
         help='Training epochs',
     )
     train_config.add_argument(
