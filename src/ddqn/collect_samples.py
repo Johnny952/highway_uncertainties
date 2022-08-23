@@ -9,7 +9,7 @@ sys.path.append('..')
 from models import make_model
 from components.uncert_agents import make_agent
 from shared.components.logger import SimpleLogger
-from shared.envs.env import Env
+from shared.envs.env import Env, load_env
 from components.trainer import Trainer
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -59,13 +59,13 @@ if __name__ == "__main__":
     # Agent Config
     agent_config = parser.add_argument_group("Agent config")
     agent_config.add_argument(
-        "-SS", "--state-stack", type=int, default=6, help="Number of state stack as observation"
+        "-SS", "--state-stack", type=int, default=4, help="Number of state stack as observation"
     )
     agent_config.add_argument(
         "-A",
         "--architecture",
         type=str,
-        default="1024",
+        default="512-512",
         help='Base network architecture',
     )
 
@@ -99,6 +99,7 @@ if __name__ == "__main__":
     # Init Agent and Environment
     print(colored("Initializing agent", "blue"))
     architecture = [int(l) for l in config["architecture"].split("-")]
+    load_env()
     env = Env(
         state_stack=config["state_stack"],
         action_repeat=config["action_repeat"],
