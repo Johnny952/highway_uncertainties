@@ -164,6 +164,8 @@ class VAEAgent(BaseAgent):
             'Eval Loss': 0.0,
             'Eval Reconst': 0.0,
             'Eval KLD': 0.0,
+            'Eval Obs': 0.0,
+            'Eval Act': 0.0,
         }
         for i, (obs, act) in tqdm(enumerate(loader, 0), 'Eval Batch'):
             with torch.no_grad():

@@ -129,7 +129,7 @@ class VAE(nn.Module):
         kld_weight = kwargs['M_N'] # Account for the minibatch samples from the dataset
         
         recons_obs_loss = self.obs_loss(recons_obs, torch.flatten(obs, start_dim=1))
-        recons_act_loss = self.act_loss(recons_act, act)
+        recons_act_loss = self.act_loss(recons_act, act.squeeze().long())
         recons_loss = recons_obs_loss + self.act_loss_weight * recons_act_loss
 
         kld_loss = torch.mean(-0.5 * torch.sum(1 +
