@@ -86,6 +86,13 @@ if __name__ == "__main__":
         help='KLD Weight',
     )
     train_config.add_argument(
+        "-ALW",
+        "--act-loss-weight",
+        type=float,
+        default=100,
+        help='Action Loss Weight',
+    )
+    train_config.add_argument(
         "-D",
         "--device",
         type=str,
@@ -330,7 +337,7 @@ if __name__ == "__main__":
         "max_capacity": config["max_capacity"],
         "Capacity_max_iter": Capacity_max_iter,
         "loss_type": config["loss_type"],
-        "act_loss_weight": 1,
+        "act_loss_weight": config["action_loss_weight"],
     }, path=f'param/vae-{args.mode}.json')
 
     logger.close()
