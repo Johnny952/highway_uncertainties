@@ -46,7 +46,7 @@ class VAEAgent(BaseAgent):
 
     def load_vae2(self, vae, vae_optimizer):
         self._vae2 = vae
-        self._vae_optimizer = vae_optimizer
+        self._vae2_optimizer = vae_optimizer
         self._vae2.to(self._device)
         self._vae2.eval()
 
