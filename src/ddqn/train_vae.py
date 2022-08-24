@@ -89,7 +89,7 @@ if __name__ == "__main__":
         "-ALW",
         "--act-loss-weight",
         type=float,
-        default=100,
+        default=0.2,
         help='Action Loss Weight',
     )
     train_config.add_argument(
