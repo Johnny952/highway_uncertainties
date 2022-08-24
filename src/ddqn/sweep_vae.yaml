@@ -8,9 +8,7 @@ metric:
 parameters:
   batch-size:
     values: [64, 128, 256, 512]
-  learning-rate:
-    values: [0.001, 0.0001, 0.00001]
-  gamma:
-    values: [1, 10, 100]
-  latent-dim:
-    values: [8, 32, 128]
+  shared-encoder-arc:
+    values: ['256-128-64', '512-512', '256-256']
+  shared-decoder-arc:
+    values: ['64-128-256', '512-512', '256-256']

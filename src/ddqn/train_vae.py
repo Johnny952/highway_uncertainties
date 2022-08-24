@@ -143,7 +143,7 @@ if __name__ == "__main__":
         "-LT", "--loss-type", type=str, default='B', help="VAE loss type, can be 'B' or 'H'"
     )
     vae_config.add_argument(
-        "-LR", "--learning-rate", type=float, default=0.001, help="Learning Rate"
+        "-LR", "--learning-rate", type=float, default=0.0001, help="Learning Rate"
     )
 
     # Agent Config
