@@ -144,6 +144,8 @@ class VAEAgent(BaseAgent):
                         'Loss': loss['loss'].item(),
                         'Reconst': loss['Reconstruction_Loss'],
                         'KLD': loss['kld_loss'],
+                        'Obs Loss': loss['Obs_loss'],
+                        'Act Loss': loss['Act_loss'],
                     })
 
                 if i % eval_every == 0:
@@ -172,6 +174,8 @@ class VAEAgent(BaseAgent):
                     outputs = self._vae2(obs.to(self._device), act.to(self._device))
                     loss = self._vae2.loss_function(*outputs, M_N=kld_weight)
                 metrics['Eval Loss'] += loss['loss'].item()
-                metrics['Eval Loss'] += loss['Reconstruction_Loss']
-                metrics['Eval Loss'] += loss['kld_loss']
+                metrics['Eval Reconst'] += loss['Reconstruction_Loss']
+                metrics['Eval KLD'] += loss['kld_loss']
+                metrics['Eval Obs'] += loss['Obs_loss']
+                metrics['Eval Act'] += loss['Act_loss']
         return metrics

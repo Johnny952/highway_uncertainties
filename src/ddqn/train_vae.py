@@ -205,7 +205,7 @@ if __name__ == "__main__":
     vae = VAE(
         state_stack=config["state_stack"],
         obs_dim=env.observation_dims,
-        act_dim=1,
+        nb_actions=len(env.actions),
         obs_encoder_arc=obs_encoder_arc,
         act_encoder_arc=act_encoder_arc,
         shared_encoder_arc=shared_encoder_arc,
@@ -260,7 +260,7 @@ if __name__ == "__main__":
         vae2 = VAE(
             state_stack=options["state_stack"],
             obs_dim=options["obs_dim"],
-            act_dim=options["act_dim"],
+            nb_actions=options["nb_actions"],
             obs_encoder_arc=options["obs_encoder_arc"],
             act_encoder_arc=options["act_encoder_arc"],
             shared_encoder_arc=options["shared_encoder_arc"],
@@ -317,7 +317,7 @@ if __name__ == "__main__":
     save_options({
         "state_stack": config["state_stack"],
         "obs_dim": env.observation_dims,
-        "act_dim": 1,
+        "nb_actions": len(env.actions),
         "obs_encoder_arc": obs_encoder_arc,
         "act_encoder_arc": act_encoder_arc,
         "shared_encoder_arc": shared_encoder_arc,

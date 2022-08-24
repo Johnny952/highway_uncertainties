@@ -29,7 +29,7 @@ class VAE(nn.Module):
     def __init__(self,
         state_stack: int,
         obs_dim: int,
-        act_dim: int,
+        nb_actions: int,
         obs_encoder_arc: "list[int]"=[64, 16],
         act_encoder_arc: "list[int]"=[16],
         shared_encoder_arc: "list[int]"=[256, 128, 64],
@@ -48,7 +48,7 @@ class VAE(nn.Module):
 
         self.latent_dim = latent_dim
         self.obs_dim = obs_dim
-        self.act_dim = act_dim
+        self.nb_actions = nb_actions
         self.obs_encoder_arc = obs_encoder_arc
         self.act_encoder_arc = act_encoder_arc
         self.obs_decoder_arc = obs_decoder_arc
@@ -65,7 +65,8 @@ class VAE(nn.Module):
         self.C_max = torch.Tensor([max_capacity])
         self.C_stop_iter = Capacity_max_iter
 
-        self.decoder_loss = nn.MSELoss()
+        self.obs_loss = nn.MSELoss()
+        self.act_loss = nn.CrossEntropyLoss()
 
         # Encoders
         self.obs_encoder = nn.Sequential(
@@ -74,7 +75,7 @@ class VAE(nn.Module):
         )
         self.act_encoder = nn.Sequential(
             nn.Flatten(),
-            Base(1, act_dim, architecture=act_encoder_arc)
+            Base(1, 1, architecture=act_encoder_arc)
         )
         self.shared_encoder = nn.Sequential(
             Base(1, act_encoder_arc[-1] + obs_encoder_arc[-1], architecture=shared_encoder_arc)
@@ -91,7 +92,8 @@ class VAE(nn.Module):
             InverseBase(1, obs_decoder_arc[0] + act_decoder_arc[0], architecture=shared_decoder_arc),
         )
         self.obs_decoder = InverseBase(state_stack, obs_dim, architecture=obs_decoder_arc)
-        self.act_decoder = InverseBase(1, act_dim, architecture=act_decoder_arc)
+        self.act_decoder = InverseBase(1, nb_actions, architecture=act_decoder_arc)
+        
 
     def encode(self, obs, act):
         x = self.obs_encoder(obs)
@@ -126,8 +128,8 @@ class VAE(nn.Module):
         log_var = args[3]
         kld_weight = kwargs['M_N'] # Account for the minibatch samples from the dataset
         
-        recons_obs_loss = self.decoder_loss(recons_obs, torch.flatten(obs, start_dim=1))
-        recons_act_loss = self.decoder_loss(recons_act, torch.flatten(act, start_dim=1))
+        recons_obs_loss = self.obs_loss(recons_obs, torch.flatten(obs, start_dim=1))
+        recons_act_loss = self.act_loss(recons_act, act)
         recons_loss = recons_obs_loss + self.act_loss_weight * recons_act_loss
 
         kld_loss = torch.mean(-0.5 * torch.sum(1 +
@@ -146,6 +148,8 @@ class VAE(nn.Module):
         l['loss'] = loss
         l['Reconstruction_Loss'] = recons_loss.detach()
         l['kld_loss'] = kld_loss.detach()
+        l['Obs_loss'] = recons_obs_loss.detach()
+        l['Act_loss'] = recons_act_loss.detach()
         return l
 
     def sample(self, num_samples: int, current_device: int, **kwargs):
