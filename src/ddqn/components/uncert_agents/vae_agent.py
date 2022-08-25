@@ -166,8 +166,13 @@ class VAEAgent(BaseAgent):
             'Eval KLD': 0.0,
             'Eval Obs': 0.0,
             'Eval Act': 0.0,
+            'Eval Accuracy': 0.0,
+            'Eval MSE': 0.0,
+            'Eval MAE': 0.0,
         }
-        for i, (obs, act) in tqdm(enumerate(loader, 0), 'Eval Batch'):
+        t = 0
+        mse_pixels = 0
+        for i, (obs, act) in enumerate(tqdm(loader, 'Eval Batch')):
             with torch.no_grad():
                 if mode == 'E':
                     outputs = self._vae(obs.to(self._device), act.to(self._device))
@@ -175,9 +180,28 @@ class VAEAgent(BaseAgent):
                 else:
                     outputs = self._vae2(obs.to(self._device), act.to(self._device))
                     loss = self._vae2.loss_function(*outputs, M_N=kld_weight)
+                recons = self._vae.decode(outputs[2])
                 metrics['Eval Loss'] += loss['loss'].item()
                 metrics['Eval Reconst'] += loss['Reconstruction_Loss']
                 metrics['Eval KLD'] += loss['kld_loss']
                 metrics['Eval Obs'] += loss['Obs_loss']
                 metrics['Eval Act'] += loss['Act_loss']
+                metrics['Eval Accuracy'] += acc(recons[1], act.to(self._device))
+                metrics['Eval MSE'] += mse(recons[0], obs.to(self._device))
+                metrics['Eval MAE'] += mae(recons[0], obs.to(self._device))
+                t += act.numel()
+                mse_pixels += obs.numel()
+        metrics['Eval Accuracy'] /= t
+        metrics['Eval MSE'] /= mse_pixels
+        metrics['Eval MAE'] /= mse_pixels
         return metrics
+
+def acc(pred, target):
+    inp = torch.argmax(pred, dim=1)
+    return torch.sum(target.squeeze() == inp)
+
+def mse(pred, target):
+    return torch.nn.functional.mse_loss(pred, torch.flatten(target, start_dim=1), reduction='sum')
+
+def mae(pred, target):
+    return torch.nn.functional.l1_loss(pred, torch.flatten(target, start_dim=1), reduction='sum') 
