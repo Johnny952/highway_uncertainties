@@ -120,7 +120,7 @@ class VAEAgent(BaseAgent):
                 'Running Reconst': 0.0,
                 'Running KLD': 0.0,
             }
-            for i, (obs, act) in enumerate(tqdm(train_loader, 'Training Batch')):
+            for i, (obs, act) in enumerate(tqdm(train_loader, f'Training Batch epoch {epoch}')):
                 if mode == 'E':
                     self._vae_optimizer.zero_grad()
                     outputs = self._vae(obs.to(self._device), act.to(self._device))
