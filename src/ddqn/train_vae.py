@@ -232,7 +232,7 @@ if __name__ == "__main__":
         max_capacity=config["max_capacity"],
         Capacity_max_iter=Capacity_max_iter,
         loss_type=config["loss_type"],
-        act_loss_weight=1,
+        act_loss_weight=config["act_loss_weight"],
     ).to(torch.float)
     optimizer = optim.Adam(vae.parameters(), lr=config["learning_rate"])
 
