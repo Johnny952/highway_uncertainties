@@ -149,7 +149,7 @@ class VAEAgent(BaseAgent):
                     })
 
                 if i % eval_every == 0:
-                    m = self.eval_vae(mode, val_loader, kld_weight)
+                    m = self.eval_vae(mode, val_loader, kld_weight, idx=eval_idx)
                     m['Eval Idx'] = eval_idx
                     logger.log(m)
                     eval_idx += 1
@@ -159,7 +159,7 @@ class VAEAgent(BaseAgent):
 
         print('Finished Training')
 
-    def eval_vae(self, mode, loader, kld_weight):
+    def eval_vae(self, mode, loader, kld_weight, idx=0):
         metrics = {
             'Eval Loss': 0.0,
             'Eval Reconst': 0.0,
@@ -172,7 +172,7 @@ class VAEAgent(BaseAgent):
         }
         t = 0
         mse_pixels = 0
-        for i, (obs, act) in enumerate(tqdm(loader, 'Eval Batch')):
+        for i, (obs, act) in enumerate(tqdm(loader, f'Eval {idx}')):
             with torch.no_grad():
                 if mode == 'E':
                     outputs = self._vae(obs.to(self._device), act.to(self._device))

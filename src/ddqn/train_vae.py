@@ -93,6 +93,13 @@ if __name__ == "__main__":
         help='Action Loss Weight',
     )
     train_config.add_argument(
+        "-NBE",
+        "--number-evaluations",
+        type=int,
+        default=100,
+        help='Number of evaluations steps during training',
+    )
+    train_config.add_argument(
         "-D",
         "--device",
         type=str,
@@ -310,6 +317,8 @@ if __name__ == "__main__":
     for name, param in config.items():
         print(colored(f"{name}: {param}", "cyan"))
 
+    total_updates = len(train_loader) * config["epochs"]
+
     agent.update_vae(
         args.mode,
         train_loader,
@@ -317,7 +326,7 @@ if __name__ == "__main__":
         logger,
         epochs=config["epochs"],
         kld_weight=config["kld_weight"],
-        eval_every=10000,
+        eval_every=total_updates // config["number_evaluations"],
     )
 
     agent.save(0, 'param/best_vae_trained')
