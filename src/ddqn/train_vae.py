@@ -61,7 +61,7 @@ if __name__ == "__main__":
         "-BS",
         "--batch-size",
         type=int,
-        default=256,
+        default=128,
         help='Batch size',
     )
     train_config.add_argument(
@@ -110,7 +110,7 @@ if __name__ == "__main__":
     # VAE Config
     vae_config = parser.add_argument_group("VAE config")
     vae_config.add_argument(
-        "-SEA", "--shared-encoder-arc", type=str, default='256-128-64', help="VAE Encoder architecture comma separated"
+        "-SEA", "--shared-encoder-arc", type=str, default='512-512', help="VAE Encoder architecture comma separated"
     )
     vae_config.add_argument(
         "-OEA", "--obs-encoder-arc", type=str, default='64-16', help="VAE Encoder architecture comma separated"
@@ -119,7 +119,7 @@ if __name__ == "__main__":
         "-AEA", "--act-encoder-arc", type=str, default='16', help="VAE Encoder architecture comma separated"
     )
     vae_config.add_argument(
-        "-SDA", "--shared-decoder-arc", type=str, default='64-128-256', help="VAE Decoder architecture comma separated"
+        "-SDA", "--shared-decoder-arc", type=str, default='512-512', help="VAE Decoder architecture comma separated"
     )
     vae_config.add_argument(
         "-ODA", "--obs-decoder-arc", type=str, default='16-64', help="VAE Decoder architecture comma separated"

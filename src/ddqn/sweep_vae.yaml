@@ -2,7 +2,7 @@ program: train_vae.py
 project: highway-ddqn
 method: grid
 metric:
-  name: "Running Loss"
+  name: "Loss"
   goal: minimize
   target: 0
 parameters:
