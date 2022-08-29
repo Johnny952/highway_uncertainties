@@ -181,8 +181,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     run_id = uuid.uuid4()
-    run_name = f"{args.model}_{run_id}"
-    # run_name = args.model
+    #run_name = f"{args.model}_{run_id}"
+    run_name = args.model
     render_path = "render"
     render_eval_path = f"{render_path}/eval"
     render_eval__model_path = f"{render_eval_path}/{run_name}"
