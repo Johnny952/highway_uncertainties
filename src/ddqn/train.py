@@ -272,6 +272,9 @@ if __name__ == "__main__":
         input_dim=env.observation_dims,
         output_dim=len(env.actions),
         architecture=architecture,
+
+        prior_mu=0,
+        prior_sigma=0.1,
     ).to(device)
     model2 = make_model(
         model=config["model"],
@@ -279,6 +282,9 @@ if __name__ == "__main__":
         input_dim=env.observation_dims,
         output_dim=len(env.actions),
         architecture=architecture,
+
+        prior_mu=0,
+        prior_sigma=0.1,
     ).to(device)
     agent = make_agent(
         agent=config["model"],
@@ -291,6 +297,10 @@ if __name__ == "__main__":
         epsilon=epsilon,
         device=device,
         lr=config["learning_rate"],
+
+        nb_nets=config["nb_nets"],
+        sample_nbr=config["sample_nbr"],
+        complexity_cost_weight=config['complexity_cost_weight']
     )
     print(colored("Agent and environments created successfully", "green"))
 
@@ -312,10 +322,6 @@ if __name__ == "__main__":
         save_obs=config["model"] == "vae",
         learning_start=200,
         train_freq=config["train_freq"],
-
-        nb_nets=config["nb_nets"],
-        sample_nbr=config["sample_nbr"],
-        complexity_cost_weight=config['complexity_cost_weight']
     )
 
     trainer.run()

@@ -4,13 +4,13 @@ import torchbnn as bnn
 from shared.models.bnn import BNNBase
 
 class BNN(nn.Module):
-    def __init__(self, state_stack, input_dim=11, output_dim=1, architecture=[256, 128, 64], **kwargs):
+    def __init__(self, state_stack, input_dim=11, output_dim=1, architecture=[256, 128, 64], prior_mu=0, prior_sigma=0.1, **kwargs):
         super(BNN, self).__init__()
 
-        self.base = BNNBase(state_stack, input_dim, architecture=architecture)
+        self.base = BNNBase(state_stack, input_dim, architecture=architecture, prior_mu=prior_mu, prior_sigma=prior_sigma)
 
         self.v = nn.Sequential(
-            bnn.BayesLinear(prior_mu=0, prior_sigma=0.1, in_features=architecture[-1], out_features=output_dim),
+            bnn.BayesLinear(prior_mu=prior_mu, prior_sigma=prior_sigma, in_features=architecture[-1], out_features=output_dim),
             nn.Softplus()
         )
     

@@ -3,6 +3,7 @@ from .bnn import BNN
 
 def make_model(
         model = 'base',
+        *args,
         **kwargs,
     ):
     switcher = {
@@ -10,4 +11,4 @@ def make_model(
         'bnn': BNN,
         'vae': Model,
     }
-    return switcher.get(model, Model)(**kwargs)
+    return switcher.get(model.lower(), Model)(*args, **kwargs)
