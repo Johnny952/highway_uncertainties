@@ -31,7 +31,7 @@ class BNNAgent(BaseAgent):
         _, index = torch.max(values, dim=-1)
         epistemic = torch.var(values_list, dim=0)
         aleatoric = torch.Tensor([0])
-        return index, epistemic, aleatoric
+        return index, (epistemic, aleatoric)
     
     def compute_loss(self, states, actions, next_states, rewards, dones):
         loss1 = torch.tensor([0.], dtype=torch.float, requires_grad=True).to(self._device)
