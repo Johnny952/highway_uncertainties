@@ -5,7 +5,7 @@ from .base_agent import BaseAgent
 # from .dropout_agent2 import DropoutAgent2
 # from .bootstrap_agent import BootstrapAgent
 # from .bootstrap_agent2 import BootstrapAgent2
-# from .bnn_agent import BNNAgent
+from .bnn_agent import BNNAgent
 from .vae_agent import VAEAgent
 
 def make_agent(agent='base', **kwargs):
@@ -16,7 +16,7 @@ def make_agent(agent='base', **kwargs):
         # 'bootstrap': BootstrapAgent,
         # 'bootstrap2': BootstrapAgent2,
         # 'sensitivity': SensitivityAgent,
-        # 'bnn': BNNAgent,
+        'bnn': BNNAgent,
         # 'aleatoric': AleatoricAgent,
         'vae': VAEAgent,
     }
