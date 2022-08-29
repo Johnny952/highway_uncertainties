@@ -1,6 +1,5 @@
 from .model import Model
 from .bnn import BNN
-from shared.models.vae import VAE
 
 def make_model(
         model = 'base',

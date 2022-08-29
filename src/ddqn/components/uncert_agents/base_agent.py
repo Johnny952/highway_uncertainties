@@ -159,12 +159,8 @@ class BaseAgent:
         self._nb_update += 1
 
     def compute_loss(self, states, actions, next_states, rewards, dones):
-        try:
-            curr_Q1 = self._model1(states).gather(1, actions).squeeze(dim=-1)
-            curr_Q2 = self._model2(states).gather(1, actions).squeeze(dim=-1)
-        except Exception:
-            print(states.shape)
-            print(actions.shape)
+        curr_Q1 = self._model1(states).gather(1, actions).squeeze(dim=-1)
+        curr_Q2 = self._model2(states).gather(1, actions).squeeze(dim=-1)
 
         next_Q = torch.min(
             torch.max(self._model1(next_states), 1)[0],

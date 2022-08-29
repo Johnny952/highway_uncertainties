@@ -166,6 +166,18 @@ if __name__ == "__main__":
         "-LR", "--learning-rate", type=float, default=5e-4, help="Learning Rate"
     )
 
+    # BNN
+    bnn_config = parser.add_argument_group("BNN config")
+    bnn_config.add_argument(
+        "-NN", "--nb-nets", type=int, default=10, help="Number of forward passes while selecting action"
+    )
+    bnn_config.add_argument(
+        "-SNB", "--sample-nbr", type=int, default=50, help="Number of forward passes while computing loss"
+    )
+    bnn_config.add_argument(
+        "-CCW", "--complexity-cost-weight", type=int, default=100, help="KLD complexity loss weight"
+    )
+
     args = parser.parse_args()
     
     run_id = uuid.uuid4()
@@ -300,6 +312,10 @@ if __name__ == "__main__":
         save_obs=config["model"] == "vae",
         learning_start=200,
         train_freq=config["train_freq"],
+
+        nb_nets=config["nb_nets"],
+        sample_nbr=config["sample_nbr"],
+        complexity_cost_weight=config['complexity_cost_weight']
     )
 
     trainer.run()
