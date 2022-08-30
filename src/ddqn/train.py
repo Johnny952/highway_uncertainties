@@ -175,7 +175,10 @@ if __name__ == "__main__":
         "-SNB", "--sample-nbr", type=int, default=50, help="Number of forward passes while computing loss"
     )
     bnn_config.add_argument(
-        "-CCW", "--complexity-cost-weight", type=int, default=100, help="KLD complexity loss weight"
+        "-CCW", "--complexity-cost-weight", type=float, default=50, help="KLD complexity loss weight"
+    )
+    bnn_config.add_argument(
+        "-PS", "--prior-sigma", type=float, default=1, help="Prior gaussian variance"
     )
 
     args = parser.parse_args()
@@ -274,7 +277,7 @@ if __name__ == "__main__":
         architecture=architecture,
 
         prior_mu=0,
-        prior_sigma=0.1,
+        prior_sigma=config["prior_sigma"],
     ).to(device)
     model2 = make_model(
         model=config["model"],
@@ -284,7 +287,7 @@ if __name__ == "__main__":
         architecture=architecture,
 
         prior_mu=0,
-        prior_sigma=0.1,
+        prior_sigma=config["prior_sigma"],
     ).to(device)
     agent = make_agent(
         agent=config["model"],
