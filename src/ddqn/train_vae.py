@@ -329,7 +329,7 @@ if __name__ == "__main__":
         eval_every=total_updates // config["number_evaluations"],
     )
 
-    agent.save(0, 'param/best_vae_trained')
+    agent.save(0, f'param/best_vae_trained_{args.mode}')
     save_options({
         "state_stack": config["state_stack"],
         "obs_dim": env.observation_dims,
