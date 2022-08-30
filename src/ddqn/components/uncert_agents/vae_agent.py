@@ -180,7 +180,6 @@ class VAEAgent(BaseAgent):
                     outputs = self._vae2(obs.to(self._device), act.to(self._device))
                     loss = self._vae2.loss_function(*outputs, M_N=kld_weight)
                     recons = self._vae2.decode(outputs[2])
-                recons = self._vae.decode(outputs[2])
                 metrics['Eval Loss'] += loss['loss'].item()
                 metrics['Eval Reconst'] += loss['Reconstruction_Loss']
                 metrics['Eval KLD'] += loss['kld_loss']
