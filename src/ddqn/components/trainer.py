@@ -187,3 +187,67 @@ class Trainer:
         self._eval_nb += 1
 
         return metrics[f"{wandb_mode} Mean Score"]
+
+    def custom_eval(self, episode_nb, mode='eval', change_obs=[10, 20, 30]):
+        assert mode in ['train', 'eval', 'test0', 'test']
+        # self._agent.eval_mode()
+        wandb_mode = mode.title()
+        metrics = {
+            f"{wandb_mode} Episode": self._eval_nb,
+            f"{wandb_mode} Mean Score": 0,
+            f"{wandb_mode} Mean Epist Uncert": 0,
+            f"{wandb_mode} Mean Aleat Uncert": 0,
+            f"{wandb_mode} Mean Steps": 0,
+            f"{wandb_mode} Mean Speed": 0,
+        }
+        mean_uncert = np.array([0, 0], dtype=np.float64)
+
+        for i_val in tqdm(range(self._nb_evaluations), f'{wandb_mode} step {episode_nb}'):
+            score = 0
+            steps = 0
+            state = self._eval_env.reset()
+            die = False
+            speeds = []
+
+            uncert = []
+            while not die:
+                action, _, (epis, aleat) = self._agent.select_action(state, eval=True)
+                if self._save_obs_test:
+                    evaluation = self._eval_nb * self._nb_evaluations + i_val
+                    self._dataset.push(state, action, evaluation, steps)
+                uncert.append(
+                    [epis.view(-1).cpu().numpy()[0], aleat.view(-1).cpu().numpy()[0]]
+                )
+
+                if steps in change_obs:
+                    self._eval_env.spawn_vehicle()
+
+                next_state, reward, die, info = self._eval_env.step(action)[:4]
+
+                score += reward
+                state = next_state
+                steps += 1
+                speeds.append(info["forward_speed"])
+
+            uncert = np.array(uncert)
+            if not self._debug:
+                save_uncert(
+                    episode_nb,
+                    i_val,
+                    score,
+                    uncert,
+                    file=f"uncertainties/{mode}/{self._model_name}.txt",
+                    # sigma=self._eval_env.random_noise,
+                )
+
+            mean_uncert += np.mean(uncert, axis=0) / self._nb_evaluations
+            metrics[f"{wandb_mode} Mean Score"] += score / self._nb_evaluations
+            metrics[f"{wandb_mode} Mean Steps"] += steps / self._nb_evaluations
+            metrics[f"{wandb_mode} Mean Speed"] += np.mean(speeds) / self._nb_evaluations
+        metrics[f"{wandb_mode} Mean Epist Uncert"] = mean_uncert[0]
+        metrics[f"{wandb_mode} Mean Aleat Uncert"] = mean_uncert[1]
+
+        self._logger.log(metrics)
+        self._eval_nb += 1
+
+        return metrics[f"{wandb_mode} Mean Score"]

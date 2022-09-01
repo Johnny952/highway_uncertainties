@@ -11,8 +11,8 @@ class Logger(object):
     def watch(self, model):
         wandb.watch(model)
     
-    def log(self, to_log: dict):
-        wandb.log(to_log)
+    def log(self, to_log: dict, step=None):
+        wandb.log(to_log, step=step)
 
     def close(self):
         wandb.finish()

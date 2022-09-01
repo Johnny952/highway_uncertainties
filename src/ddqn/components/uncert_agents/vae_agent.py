@@ -66,8 +66,8 @@ class VAEAgent(BaseAgent):
     def get_uncert(self, state: torch.Tensor):
         index = super().get_uncert(state)[0]
 
-        epistemic = torch.exp(self._vae.encode(state)[1])
-        aleatoric = torch.exp(self._vae2.encode(state)[1])
+        epistemic = torch.exp(self._vae.encode(state, index.unsqueeze(dim=0).float())[1])
+        aleatoric = torch.exp(self._vae2.encode(state, index.unsqueeze(dim=0).float())[1])
         return index, (epistemic, aleatoric)
 
     def save(self, epoch, path="param/ppo_net_params.pkl"):
