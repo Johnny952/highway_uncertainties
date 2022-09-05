@@ -188,7 +188,22 @@ class Trainer:
 
         return metrics[f"{wandb_mode} Mean Score"]
 
-    def custom_eval(self, episode_nb, mode='eval', change_obs=[10, 20, 30]):
+    def eval_spawn_vehicle(self, mode='eval', change_obs=[10, 20]):
+        def callback(step):
+            if step in change_obs:
+                self._eval_env.spawn_vehicle()
+
+        return self.custom_eval(0, mode=mode, callback=callback)
+    
+    def eval_change_act(self, mode='eval', change_act=[10, 20]):
+        def callback(step, act):
+            if step in change_act:
+                return 4
+            return act
+            
+        return self.custom_eval(0, mode=mode, act_callback=callback)
+
+    def custom_eval(self, episode_nb, mode='eval', callback=lambda x: x, act_callback=lambda x, y: y):
         assert mode in ['train', 'eval', 'test0', 'test']
         # self._agent.eval_mode()
         wandb_mode = mode.title()
@@ -219,8 +234,8 @@ class Trainer:
                     [epis.view(-1).cpu().numpy()[0], aleat.view(-1).cpu().numpy()[0]]
                 )
 
-                if steps in change_obs:
-                    self._eval_env.spawn_vehicle()
+                callback(steps)
+                action = act_callback(steps, action)
 
                 next_state, reward, die, info = self._eval_env.step(action)[:4]
 

@@ -203,6 +203,9 @@ if __name__ == "__main__":
     uncertainties_eval_path = f"{uncertainties_path}/test"
     uncertainties_eval_model_path = f"{uncertainties_eval_path}/{run_name}.txt"
 
+    uncertainties_eval_path2 = f"{uncertainties_path}/test0"
+    uncertainties_eval_model_path2 = f"{uncertainties_eval_path2}/{run_name}.txt"
+
     print(colored("Initializing data folders", "blue"))
     # Init model checkpoint folder and uncertainties folder
     if not args.debug:
@@ -222,7 +225,10 @@ if __name__ == "__main__":
                 os.remove(f)
         if not os.path.exists(uncertainties_eval_path):
             os.makedirs(uncertainties_eval_path)
+        if not os.path.exists(uncertainties_eval_path2):
+            os.makedirs(uncertainties_eval_path2)
         init_uncert_file(file=uncertainties_eval_model_path)
+        init_uncert_file(file=uncertainties_eval_model_path2)
     print(colored("Data folders created successfully", "green"))
 
     # Virtual display
@@ -356,6 +362,7 @@ if __name__ == "__main__":
         epsilon=epsilon,
         device=device,
         lr=config["learning_rate"],
+        save_obs=False,
 
         nb_nets=config["nb_nets"],
         sample_nbr=config["sample_nbr"],
@@ -383,12 +390,13 @@ if __name__ == "__main__":
         model_name=run_name,
         checkpoint_every=500,
         debug=config["debug"],
-        save_obs=config["model"] == "vae",
+        save_obs=False,
         learning_start=200,
         train_freq=config["train_freq"],
     )
 
-    trainer.custom_eval(0, mode='test')
+    trainer.eval_spawn_vehicle(mode='test')
+    trainer.eval_change_act(mode='test0')
     env.close()
     eval_env.close()
     logger.close()

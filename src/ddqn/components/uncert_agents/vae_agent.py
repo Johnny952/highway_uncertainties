@@ -5,21 +5,23 @@ from torch.utils import data
 from .base_agent import BaseAgent
 from shared.components.logger import Logger
 from shared.components.dataset import Dataset
+from shared.models.vae import VAE
 
 
 class VAEAgent(BaseAgent):
     def __init__(self,
-                vae1=None,
+                vae1: VAE=None,
                 vae1_optimizer=None,
                 save_obs: bool=True,
-                vae2=None,
+                vae2: VAE=None,
                 vae2_optimizer=None,
                 *args,
                 **kwargs,
                 ):
         super().__init__(*args, **kwargs)
 
-        self._dataset = Dataset('dataset_update.hdf5', overwrite=save_obs)
+        if save_obs:
+            self._dataset = Dataset('dataset_update.hdf5')
 
         if (vae1 and vae1_optimizer) and (vae2 and vae2_optimizer):
             self.load_vae(vae1, vae1_optimizer)
@@ -36,13 +38,13 @@ class VAEAgent(BaseAgent):
         else:
             raise NotImplementedError('At least one vae and one optimizer must be provided')
 
-    def load_vae(self, vae, vae_optimizer):
+    def load_vae(self, vae: VAE, vae_optimizer):
         self._vae = vae
         self._vae.to(self._device)
         self._vae.eval()
         self._vae_optimizer = vae_optimizer
 
-    def load_vae2(self, vae, vae_optimizer):
+    def load_vae2(self, vae: VAE, vae_optimizer):
         self._vae2 = vae
         self._vae2_optimizer = vae_optimizer
         self._vae2.to(self._device)
@@ -66,8 +68,8 @@ class VAEAgent(BaseAgent):
     def get_uncert(self, state: torch.Tensor):
         index = super().get_uncert(state)[0]
 
-        epistemic = torch.exp(self._vae.encode(state, index.unsqueeze(dim=0).float())[1])
-        aleatoric = torch.exp(self._vae2.encode(state, index.unsqueeze(dim=0).float())[1])
+        epistemic = torch.sum(torch.exp(self._vae.encode(state, index.unsqueeze(dim=0).float())[1]))
+        aleatoric = torch.sum(torch.exp(self._vae2.encode(state, index.unsqueeze(dim=0).float())[1]))
         return index, (epistemic, aleatoric)
 
     def save(self, epoch, path="param/ppo_net_params.pkl"):
@@ -167,6 +169,7 @@ class VAEAgent(BaseAgent):
             'Eval Accuracy': 0.0,
             'Eval MSE': 0.0,
             'Eval MAE': 0.0,
+            'Eval log std': 0.0,
         }
         t = 0
         mse_pixels = 0
@@ -176,10 +179,12 @@ class VAEAgent(BaseAgent):
                     outputs = self._vae(obs.to(self._device), act.to(self._device))
                     loss = self._vae.loss_function(*outputs, M_N=kld_weight)
                     recons = self._vae.decode(outputs[2])
+                    metrics['Eval log std'] += torch.sum(torch.exp(self._vae.encode(obs.to(self._device), act.to(self._device))[1])) / self._vae.latent_dim
                 else:
                     outputs = self._vae2(obs.to(self._device), act.to(self._device))
                     loss = self._vae2.loss_function(*outputs, M_N=kld_weight)
                     recons = self._vae2.decode(outputs[2])
+                    metrics['Eval log std'] += torch.sum(torch.exp(self._vae2.encode(obs.to(self._device), act.to(self._device))[1])) / self._vae2.latent_dim
                 metrics['Eval Loss'] += loss['loss'].item()
                 metrics['Eval Reconst'] += loss['Reconstruction_Loss']
                 metrics['Eval KLD'] += loss['kld_loss']
@@ -193,6 +198,7 @@ class VAEAgent(BaseAgent):
         metrics['Eval Accuracy'] /= t
         metrics['Eval MSE'] /= mse_pixels
         metrics['Eval MAE'] /= mse_pixels
+        metrics['Eval log std'] /= t
         return metrics
 
 def acc(pred, target):
