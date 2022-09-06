@@ -178,7 +178,7 @@ if __name__ == "__main__":
         "-CCW", "--complexity-cost-weight", type=float, default=50, help="KLD complexity loss weight"
     )
     bnn_config.add_argument(
-        "-PS", "--prior-sigma", type=float, default=1, help="Prior gaussian variance"
+        "-PS", "--prior-sigma", type=float, default=0.1, help="Prior gaussian variance"
     )
 
     args = parser.parse_args()

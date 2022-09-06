@@ -50,19 +50,18 @@ class BNNAgent(BaseAgent):
             value_loss1 = self._criterion(curr_Q1, expected_Q.detach())
             value_loss2 = self._criterion(curr_Q2, expected_Q.detach())
 
-            kld_loss1 = self._kl_loss(self._model1) * self.complexity_cost_weight
-            kld_loss2 = self._kl_loss(self._model2) * self.complexity_cost_weight
-            loss1 += kld_loss1 + value_loss1
-            loss2 += kld_loss2 + value_loss2
+            kld_loss1 = self._kl_loss(self._model1)
+            kld_loss2 = self._kl_loss(self._model2)
+            loss1 += self.complexity_cost_weight * kld_loss1 + value_loss1
+            loss2 += self.complexity_cost_weight * kld_loss2 + value_loss2
 
             self._logger.log(
                 {
                     "Value Loss 1": float(value_loss1),
                     "Value Loss 2": float(value_loss2),
-                    "KLD Loss 2": float(kld_loss1),
+                    "KLD Loss 1": float(kld_loss1),
                     "KLD Loss 2": float(kld_loss2),
                 }
             )
 
         return loss1, loss2
-    
