@@ -7,6 +7,7 @@ from .base_agent import BaseAgent
 # from .bootstrap_agent2 import BootstrapAgent2
 from .bnn_agent import BNNAgent
 from .vae_agent import VAEAgent
+from .ae_agent import AEAgent
 
 def make_agent(agent='base', **kwargs):
     switcher = {
@@ -19,5 +20,6 @@ def make_agent(agent='base', **kwargs):
         'bnn': BNNAgent,
         # 'aleatoric': AleatoricAgent,
         'vae': VAEAgent,
+        'ae': AEAgent,
     }
     return switcher.get(agent, BaseAgent)(**kwargs)

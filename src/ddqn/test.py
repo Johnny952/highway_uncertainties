@@ -310,7 +310,7 @@ if __name__ == "__main__":
     vae2_optimizer = None
     if args.model == 'vae':
         options = load_options(path='param/vae-E.json')
-        vae = VAE(
+        vae1 = VAE(
             state_stack=options["state_stack"],
             obs_dim=options["obs_dim"],
             nb_actions=options["nb_actions"],
@@ -328,7 +328,7 @@ if __name__ == "__main__":
             loss_type=options["loss_type"],
             act_loss_weight=options["act_loss_weight"],
         ).to(torch.float)
-        vae1_optimizer = torch.optim.Adam(vae.parameters(), lr=config["learning_rate"])
+        vae1_optimizer = torch.optim.Adam(vae1.parameters(), lr=config["learning_rate"])
 
         options2 = load_options(path='param/vae-A.json')
         vae2 = VAE(
@@ -368,7 +368,7 @@ if __name__ == "__main__":
         sample_nbr=config["sample_nbr"],
         complexity_cost_weight=config['complexity_cost_weight'],
 
-        vae1=vae,
+        vae1=vae1,
         vae1_optimizer=vae1_optimizer,
         vae2=vae2,
         vae2_optimizer=vae2_optimizer,
