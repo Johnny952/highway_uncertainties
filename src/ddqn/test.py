@@ -19,8 +19,8 @@ from components.uncert_agents import make_agent
 from components.epsilon import Epsilon
 from components.trainer import Trainer
 from models import make_model
-from train_vae import load_options
-from shared.models.vae import VAE
+from train_ae import load_options
+from shared.models.ae import AE
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -304,13 +304,11 @@ if __name__ == "__main__":
         prior_mu=0,
         prior_sigma=config["prior_sigma"],
     ).to(device)
-    vae1 = None
-    vae2 = None
-    vae1_optimizer = None
-    vae2_optimizer = None
-    if args.model == 'vae':
-        options = load_options(path='param/vae-E.json')
-        vae1 = VAE(
+    ae1 = None
+    ae1_optimizer = None
+    if args.model.lower().strip() == 'ae':
+        options = load_options(path='param/ae.json')
+        ae1 = AE(
             state_stack=options["state_stack"],
             obs_dim=options["obs_dim"],
             nb_actions=options["nb_actions"],
@@ -321,35 +319,11 @@ if __name__ == "__main__":
             act_decoder_arc=options["act_decoder_arc"],
             shared_decoder_arc=options["shared_decoder_arc"],
             latent_dim=options["latent_dim"],
-            beta=options["beta"],
-            gamma=options["gamma"],
-            max_capacity=options["max_capacity"],
-            Capacity_max_iter=options["Capacity_max_iter"],
-            loss_type=options["loss_type"],
             act_loss_weight=options["act_loss_weight"],
+            obs_loss_weight=options["obs_loss_weight"],
+            prob_loss_weight=options["prob_loss_weight"],
         ).to(torch.float)
-        vae1_optimizer = torch.optim.Adam(vae1.parameters(), lr=config["learning_rate"])
-
-        options2 = load_options(path='param/vae-A.json')
-        vae2 = VAE(
-            state_stack=options2["state_stack"],
-            obs_dim=options2["obs_dim"],
-            nb_actions=options2["nb_actions"],
-            obs_encoder_arc=options2["obs_encoder_arc"],
-            act_encoder_arc=options2["act_encoder_arc"],
-            shared_encoder_arc=options2["shared_encoder_arc"],
-            obs_decoder_arc=options2["obs_decoder_arc"],
-            act_decoder_arc=options2["act_decoder_arc"],
-            shared_decoder_arc=options2["shared_decoder_arc"],
-            latent_dim=options2["latent_dim"],
-            beta=options2["beta"],
-            gamma=options2["gamma"],
-            max_capacity=options2["max_capacity"],
-            Capacity_max_iter=options2["Capacity_max_iter"],
-            loss_type=options2["loss_type"],
-            act_loss_weight=options2["act_loss_weight"],
-        ).to(torch.float)
-        vae2_optimizer = torch.optim.Adam(vae2.parameters(), lr=config["learning_rate"])
+        ae1_optimizer = torch.optim.Adam(ae1.parameters(), lr=config["learning_rate"])
 
     agent = make_agent(
         agent=config["model"],
@@ -368,10 +342,8 @@ if __name__ == "__main__":
         sample_nbr=config["sample_nbr"],
         complexity_cost_weight=config['complexity_cost_weight'],
 
-        vae1=vae1,
-        vae1_optimizer=vae1_optimizer,
-        vae2=vae2,
-        vae2_optimizer=vae2_optimizer,
+        ae=ae1,
+        ae_optimizer=ae1_optimizer,
     )
     agent.load(config["from_checkpoint"], eval_mode=True)
     print(colored("Agent and environments created successfully", "green"))

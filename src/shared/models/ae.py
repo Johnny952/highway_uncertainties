@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import numpy as np
 from .base import Base
 
 
@@ -39,10 +40,12 @@ class AE(nn.Module):
         latent_dim: int=32,
         act_loss_weight: float = 1,
         obs_loss_weight: float = 1,
+        prob_loss_weight: float = 1,
     ):
         super(AE, self).__init__()
 
         self.latent_dim = latent_dim
+        self.state_stack = state_stack
         self.obs_dim = obs_dim
         self.nb_actions = nb_actions
         self.obs_encoder_arc = obs_encoder_arc
@@ -50,6 +53,7 @@ class AE(nn.Module):
         self.obs_decoder_arc = obs_decoder_arc
         self.act_decoder_arc = act_decoder_arc
 
+        self.prob_loss_weight = prob_loss_weight
         self.act_loss_weight = act_loss_weight
         self.obs_loss_weight = obs_loss_weight
         self.obs_loss = nn.MSELoss()
@@ -110,11 +114,33 @@ class AE(nn.Module):
         z = self.encode(obs, act)
         reconst_obs, reconst_act = self.decode(z)
         return [reconst_obs, reconst_act, (obs, act)]
+
+    def multivariate_normal_distribution(self, x, d, mean, covariance, epsilon=1e-10):
+        x_m = x - mean
+        return 1.0 / (torch.sqrt((2 * np.pi)**d * (torch.linalg.det(covariance) + epsilon))) * torch.exp(-0.5 * x_m @ torch.linalg.solve(covariance, x_m.T))
     
     def prob(self, obs, act):
-        outputs = self(obs, act)
-        l = self.loss_function(outputs)
-        return l['Prob Loss']
+        (obs_mu, obs_log_var), (act_mu, act_log_var) = self(obs, act)[:2]
+        one_hot_act = nn.functional.one_hot(act.squeeze(dim=1).long(), num_classes=self.nb_actions)
+        target_ = torch.cat((torch.flatten(obs, start_dim=1), one_hot_act), dim=-1)
+        mu = torch.cat((obs_mu, act_mu), dim=-1)
+        covar = torch.exp(torch.cat((obs_log_var, act_log_var), dim=-1)) * torch.eye(self.obs_dim * self.state_stack + self.nb_actions).to(obs.device)
+        return self.multivariate_normal_distribution(target_, self.obs_dim * self.state_stack + self.nb_actions, mu, covar)
+
+    def sum_var(self, obs, act):
+        (_, obs_log_var), (_, act_log_var) = self(obs, act)[:2]
+        obs_sum_var = torch.sum(torch.exp(obs_log_var)) / self.obs_dim / self.state_stack
+        act_sum_var = torch.sum(torch.exp(act_log_var)) / self.nb_actions
+        return obs_sum_var + act_sum_var
+
+    def log_prob(self, obs, act):
+        (obs_mu, obs_log_var), (act_mu, act_log_var) = self(obs, act)[:2]
+        one_hot_act = nn.functional.one_hot(act.squeeze(dim=1).long(), num_classes=self.nb_actions)
+        target_ = torch.cat((torch.flatten(obs, start_dim=1), one_hot_act), dim=-1)
+        mu = torch.cat((obs_mu, act_mu), dim=-1)
+        covar = torch.exp(torch.cat((obs_log_var, act_log_var), dim=-1)) * torch.eye(self.obs_dim * self.state_stack + self.nb_actions).to(obs.device)
+        distribution = torch.distributions.multivariate_normal.MultivariateNormal(mu, covar.unsqueeze(dim=0))
+        return distribution.log_prob(target_)
 
     def loss_function(self, *args, **kwargs) -> dict:
         obs_mu, obs_log_var = args[0]
@@ -131,7 +157,7 @@ class AE(nn.Module):
         log_var = torch.cat((obs_log_var, act_log_var), dim=-1)
         prob_loss = self.loss(mu, target_, torch.exp(log_var))
 
-        loss = self.act_loss_weight * act_loss + self.obs_loss_weight * obs_loss + prob_loss
+        loss = self.act_loss_weight * act_loss + self.obs_loss_weight * obs_loss + prob_loss * self.prob_loss_weight
 
         l = {
             'loss': loss,

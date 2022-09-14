@@ -43,9 +43,9 @@ class AEAgent(BaseAgent):
     def get_uncert(self, state: torch.Tensor):
         index = super().get_uncert(state)[0]
 
-        epistemic = self._ae.prob(state, index.unsqueeze(dim=0).float())
-        #print(epistemic.shape)
-        #raise Exception
+        # epistemic = 1 - self._ae.prob(state, index.unsqueeze(dim=0).float())
+        # epistemic = self._ae.sum_var(state, index.unsqueeze(dim=0).float())
+        epistemic = -self._ae.log_prob(state, index.unsqueeze(dim=0).float())
         aleatoric = torch.Tensor([0])
         return index, (epistemic, aleatoric)
 

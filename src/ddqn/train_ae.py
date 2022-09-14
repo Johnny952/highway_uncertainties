@@ -122,6 +122,9 @@ if __name__ == "__main__":
         "-ALW", "--act-loss-weight", type=float, default=1, help="Action reconstruction loss weight"
     )
     ae_config.add_argument(
+        "-PLW", "--prob-loss-weight", type=float, default=1, help="Probability loss weight"
+    )
+    ae_config.add_argument(
         "-LR", "--learning-rate", type=float, default=0.0001, help="Learning Rate"
     )
 
@@ -201,6 +204,7 @@ if __name__ == "__main__":
         latent_dim=config["latent_dim"],
         act_loss_weight=config["act_loss_weight"],
         obs_loss_weight=config["obs_loss_weight"],
+        prob_loss_weight=config["prob_loss_weight"],
     ).to(torch.float)
     optimizer = optim.Adam(ae.parameters(), lr=config["learning_rate"])
 
@@ -267,6 +271,9 @@ if __name__ == "__main__":
         "act_decoder_arc": act_decoder_arc,
         "shared_decoder_arc": shared_decoder_arc,
         "latent_dim": config["latent_dim"],
+        "act_loss_weight": config["act_loss_weight"],
+        "obs_loss_weight": config["obs_loss_weight"],
+        "prob_loss_weight": config["prob_loss_weight"],
     }, path=f'param/ae.json')
 
     logger.close()

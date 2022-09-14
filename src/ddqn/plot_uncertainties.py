@@ -9,24 +9,24 @@ if __name__ == "__main__":
         os.makedirs("images")
 
     test_paths = [
-        "uncertainties/test/vae.txt",
-        "uncertainties/test/vae.txt",
+        "uncertainties/test/ae.txt",
+        # "uncertainties/test/ae.txt",
         "uncertainties/test/bnn.txt",
     ]
     names = [
-        "VAE",
-        "VAE",
+        "AE",
+        # "AE",
         "BNN",
     ]
     uncertainties = [
         1,
-        2,
+        # 2,
         1,
     ]
     log_scales = [
         False,
-        False,
+        # False,
         False,
     ]
-    # python test.py -ES 20 -M vae -FC param/best_vae_trained_A -ER -EV 5
-    plot_time(test_paths, names, log_scales, uncertainties, red_lines=[10, 20], nb_eval=2)
+    # python test.py -ES 20 -M ae -FC param/best_ae_trained.pkl -ER -EV 5
+    plot_time(test_paths, names, log_scales, uncertainties, red_lines=[10, 20], nb_eval=4)

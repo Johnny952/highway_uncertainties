@@ -9,6 +9,5 @@ def make_model(
     switcher = {
         'base': Model,
         'bnn': BNN,
-        'vae': Model,
     }
     return switcher.get(model.lower(), Model)(*args, **kwargs)
