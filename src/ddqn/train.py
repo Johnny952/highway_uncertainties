@@ -322,7 +322,7 @@ if __name__ == "__main__":
         model_name=run_name,
         checkpoint_every=500,
         debug=config["debug"],
-        save_obs=config["model"] == "vae",
+        save_obs=config["model"] in ["vae", 'ae'],
         learning_start=200,
         train_freq=config["train_freq"],
     )

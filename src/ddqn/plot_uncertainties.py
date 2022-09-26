@@ -29,4 +29,4 @@ if __name__ == "__main__":
         False,
     ]
     # python test.py -ES 20 -M ae -FC param/best_ae_trained.pkl -ER -EV 5
-    plot_time(test_paths, names, log_scales, uncertainties, red_lines=[10, 20], nb_eval=4)
+    plot_time(test_paths, names, log_scales, uncertainties, red_lines=[11, 21], nb_eval=4)

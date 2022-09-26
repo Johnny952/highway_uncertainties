@@ -113,7 +113,7 @@ if __name__ == "__main__":
         "-ADA", "--act-decoder-arc", type=str, default='16-4', help="AE Decoder architecture comma separated"
     )
     ae_config.add_argument(
-        "-LD", "--latent-dim", type=int, default=32, help="AE latent dimensions"
+        "-LD", "--latent-dim", type=int, default=8, help="AE latent dimensions"
     )
     ae_config.add_argument(
         "-OLW", "--obs-loss-weight", type=float, default=1, help="Observation reconstruction loss weight"
@@ -126,6 +126,9 @@ if __name__ == "__main__":
     )
     ae_config.add_argument(
         "-LR", "--learning-rate", type=float, default=0.0001, help="Learning Rate"
+    )
+    ae_config.add_argument(
+        "-N", "--name", type=str, default='e', help="File sufix"
     )
 
     # Agent Config
@@ -259,7 +262,7 @@ if __name__ == "__main__":
         eval_every=total_updates // config["number_evaluations"],
     )
 
-    agent.save(0, 'param/best_ae_trained.pkl')
+    agent.save(0, f'param/best_ae_trained-{args.name}.pkl')
     save_options({
         "state_stack": config["state_stack"],
         "obs_dim": env.observation_dims,
@@ -274,6 +277,6 @@ if __name__ == "__main__":
         "act_loss_weight": config["act_loss_weight"],
         "obs_loss_weight": config["obs_loss_weight"],
         "prob_loss_weight": config["prob_loss_weight"],
-    }, path=f'param/ae.json')
+    }, path=f'param/ae-{args.name}.json')
 
     logger.close()

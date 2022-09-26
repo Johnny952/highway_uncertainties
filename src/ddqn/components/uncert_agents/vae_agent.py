@@ -10,11 +10,9 @@ from shared.models.vae import VAE
 
 class VAEAgent(BaseAgent):
     def __init__(self,
-                vae1: VAE=None,
-                vae1_optimizer=None,
+                vae: VAE=None,
+                vae_optimizer=None,
                 save_obs: bool=True,
-                vae2: VAE=None,
-                vae2_optimizer=None,
                 *args,
                 **kwargs,
                 ):
@@ -23,32 +21,11 @@ class VAEAgent(BaseAgent):
         if save_obs:
             self._dataset = Dataset('dataset_update.hdf5')
 
-        if (vae1 and vae1_optimizer) and (vae2 and vae2_optimizer):
-            self.load_vae(vae1, vae1_optimizer)
-            self.load_vae2(vae2, vae2_optimizer)
-
-        elif vae2 and vae2_optimizer:
-            self.load_vae(vae2, vae2_optimizer)
-            self.load_vae2(vae2, vae2_optimizer)
-
-        elif vae1 and vae1_optimizer:
-            self.load_vae(vae1, vae1_optimizer)
-            self.load_vae2(vae1, vae1_optimizer)
-        
-        else:
-            raise NotImplementedError('At least one vae and one optimizer must be provided')
-
-    def load_vae(self, vae: VAE, vae_optimizer):
         self._vae = vae
         self._vae.to(self._device)
         self._vae.eval()
         self._vae_optimizer = vae_optimizer
 
-    def load_vae2(self, vae: VAE, vae_optimizer):
-        self._vae2 = vae
-        self._vae2_optimizer = vae_optimizer
-        self._vae2.to(self._device)
-        self._vae2.eval()
 
     def sample_buffer(self):
         dataset = self._buffer.sample()
@@ -69,7 +46,7 @@ class VAEAgent(BaseAgent):
         index = super().get_uncert(state)[0]
 
         epistemic = torch.sum(torch.exp(self._vae.encode(state, index.unsqueeze(dim=0).float())[1]))
-        aleatoric = torch.sum(torch.exp(self._vae2.encode(state, index.unsqueeze(dim=0).float())[1]))
+        aleatoric = torch.Tensor([0])
         return index, (epistemic, aleatoric)
 
     def save(self, epoch, path="param/ppo_net_params.pkl"):
@@ -78,11 +55,9 @@ class VAEAgent(BaseAgent):
             "model1_state_dict": self._model1.state_dict(),
             "model2_state_dict": self._model2.state_dict(),
             "vae_state_dict": self._vae.state_dict(),
-            "vae2_state_dict": self._vae2.state_dict(),
             "optimizer1_state_dict": self._optimizer1.state_dict(),
             "optimizer2_state_dict": self._optimizer2.state_dict(),
             "vae_optimizer_state_dict": self._vae_optimizer.state_dict(),
-            "vae2_optimizer_state_dict": self._vae2_optimizer.state_dict(),
         }
         torch.save(tosave, path)
 
@@ -91,13 +66,10 @@ class VAEAgent(BaseAgent):
         self._model1.load_state_dict(checkpoint["model1_state_dict"])
         self._model2.load_state_dict(checkpoint["model2_state_dict"])
         self._vae.load_state_dict(checkpoint["vae_state_dict"])
-        self._vae2.load_state_dict(checkpoint["vae2_state_dict"])
         self._optimizer1.load_state_dict(checkpoint["optimizer1_state_dict"])
         self._optimizer2.load_state_dict(checkpoint["optimizer2_state_dict"])
         self._vae_optimizer.load_state_dict(
             checkpoint["vae_optimizer_state_dict"])
-        self._vae2_optimizer.load_state_dict(
-            checkpoint["vae2_optimizer_state_dict"])
 
         if eval_mode:
             self._model1.eval()
@@ -109,7 +81,7 @@ class VAEAgent(BaseAgent):
             self._vae.train()
         return checkpoint["epoch"]
 
-    def update_vae(self, mode, train_loader: data.DataLoader, val_loader: data.DataLoader, logger: Logger, epochs: int = 10, kld_weight=1, eval_every=1000):
+    def update_vae(self, train_loader: data.DataLoader, val_loader: data.DataLoader, logger: Logger, epochs: int = 10, kld_weight=1, eval_every=1000):
         index = 0
         eval_idx = 0
 
@@ -121,18 +93,11 @@ class VAEAgent(BaseAgent):
                 'Running KLD': 0.0,
             }
             for i, (obs, act) in enumerate(tqdm(train_loader, f'Training Batch epoch {epoch}')):
-                if mode == 'E':
-                    self._vae_optimizer.zero_grad()
-                    outputs = self._vae(obs.to(self._device), act.to(self._device))
-                    loss = self._vae.loss_function(*outputs, M_N=kld_weight)
-                    loss['loss'].backward()
-                    self._vae_optimizer.step()
-                else:
-                    self._vae2_optimizer.zero_grad()
-                    outputs = self._vae2(obs.to(self._device), act.to(self._device))
-                    loss = self._vae2.loss_function(*outputs, M_N=kld_weight)
-                    loss['loss'].backward()
-                    self._vae2_optimizer.step()
+                self._vae_optimizer.zero_grad()
+                outputs = self._vae(obs.to(self._device), act.to(self._device))
+                loss = self._vae.loss_function(*outputs, M_N=kld_weight)
+                loss['loss'].backward()
+                self._vae_optimizer.step()
 
                 metrics["Running Loss"] += loss['loss'].item()
                 metrics["Running Reconst"] += loss['Reconstruction_Loss']
@@ -149,7 +114,7 @@ class VAEAgent(BaseAgent):
                     })
 
                 if i % eval_every == 0:
-                    m = self.eval_vae(mode, val_loader, kld_weight, idx=eval_idx)
+                    m = self.eval_vae(val_loader, kld_weight, idx=eval_idx)
                     m['Eval Idx'] = eval_idx
                     logger.log(m)
                     eval_idx += 1
@@ -159,7 +124,7 @@ class VAEAgent(BaseAgent):
 
         print('Finished Training')
 
-    def eval_vae(self, mode, loader, kld_weight, idx=0):
+    def eval_vae(self, loader, kld_weight, idx=0):
         metrics = {
             'Eval Loss': 0.0,
             'Eval Reconst': 0.0,
@@ -175,16 +140,10 @@ class VAEAgent(BaseAgent):
         mse_pixels = 0
         for i, (obs, act) in enumerate(tqdm(loader, f'Eval {idx}')):
             with torch.no_grad():
-                if mode == 'E':
-                    outputs = self._vae(obs.to(self._device), act.to(self._device))
-                    loss = self._vae.loss_function(*outputs, M_N=kld_weight)
-                    recons = self._vae.decode(outputs[2])
-                    metrics['Eval log std'] += torch.sum(torch.exp(self._vae.encode(obs.to(self._device), act.to(self._device))[1])) / self._vae.latent_dim
-                else:
-                    outputs = self._vae2(obs.to(self._device), act.to(self._device))
-                    loss = self._vae2.loss_function(*outputs, M_N=kld_weight)
-                    recons = self._vae2.decode(outputs[2])
-                    metrics['Eval log std'] += torch.sum(torch.exp(self._vae2.encode(obs.to(self._device), act.to(self._device))[1])) / self._vae2.latent_dim
+                outputs = self._vae(obs.to(self._device), act.to(self._device))
+                loss = self._vae.loss_function(*outputs, M_N=kld_weight)
+                recons = self._vae.decode(outputs[2])
+                metrics['Eval log std'] += torch.sum(torch.exp(self._vae.encode(obs.to(self._device), act.to(self._device))[1])) / self._vae.latent_dim
                 metrics['Eval Loss'] += loss['loss'].item()
                 metrics['Eval Reconst'] += loss['Reconstruction_Loss']
                 metrics['Eval KLD'] += loss['kld_loss']

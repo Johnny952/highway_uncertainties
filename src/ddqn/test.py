@@ -78,6 +78,13 @@ if __name__ == "__main__":
         default="param/best_model",
         help='Path to trained model',
     )
+    agent_config.add_argument(
+        "-C",
+        "--config",
+        type=str,
+        default="param/ae.json",
+        help='Path to config model',
+    )
 
     # Epsilon Config
     epsilon_config = parser.add_argument_group("Epsilon config")
@@ -307,7 +314,7 @@ if __name__ == "__main__":
     ae1 = None
     ae1_optimizer = None
     if args.model.lower().strip() == 'ae':
-        options = load_options(path='param/ae.json')
+        options = load_options(path=config["config"])
         ae1 = AE(
             state_stack=options["state_stack"],
             obs_dim=options["obs_dim"],
