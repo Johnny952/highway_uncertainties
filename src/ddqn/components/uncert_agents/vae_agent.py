@@ -14,6 +14,9 @@ class VAEAgent(BaseAgent):
                 vae: VAE=None,
                 vae_optimizer=None,
                 save_obs: bool=True,
+                state_stack: int=1,
+                obs_dim: int=1,
+                nb_actions: int=1,
                 *args,
                 **kwargs,
                 ):
@@ -24,9 +27,9 @@ class VAEAgent(BaseAgent):
 
         if vae is None:
             self._vae = VAE(
-                1,
-                1,
-                1
+                state_stack,
+                obs_dim,
+                nb_actions,
             )
             self._vae.to(self._device)
             self._vae.eval()
