@@ -301,6 +301,10 @@ if __name__ == "__main__":
         device=device,
         lr=config["learning_rate"],
 
+        state_stack=config["state_stack"],
+        obs_dim=env.observation_dims,
+        nb_actions=len(env.actions),
+
         nb_nets=config["nb_nets"],
         sample_nbr=config["sample_nbr"],
         complexity_cost_weight=config['complexity_cost_weight']
