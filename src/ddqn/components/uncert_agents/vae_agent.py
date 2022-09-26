@@ -1,6 +1,7 @@
 import torch
 from tqdm import tqdm
 from torch.utils import data
+import torch.optim as optim
 
 from .base_agent import BaseAgent
 from shared.components.logger import Logger
@@ -21,10 +22,20 @@ class VAEAgent(BaseAgent):
         if save_obs:
             self._dataset = Dataset('dataset_update.hdf5')
 
-        self._vae = vae
-        self._vae.to(self._device)
-        self._vae.eval()
-        self._vae_optimizer = vae_optimizer
+        if vae is None:
+            self._vae = VAE(
+                1,
+                1,
+                1
+            )
+            self._vae.to(self._device)
+            self._vae.eval()
+            self._vae_optimizer = optim.Adam(self._vae.parameters(), lr=0.0001)
+        else:
+            self._vae = vae
+            self._vae.to(self._device)
+            self._vae.eval()
+            self._vae_optimizer = vae_optimizer
 
 
     def sample_buffer(self):
